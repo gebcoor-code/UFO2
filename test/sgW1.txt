@@ -1,0 +1,10 @@
+wait 500
+click
+wait 300
+at 288 22
+wait 5
+click
+wait 200
+shot W1
+wait 300
+shot W2

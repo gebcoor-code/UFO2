@@ -1,0 +1,1163 @@
+	;(C)1991,92  Graphic  Library V1.1 for UFO2
+	;Mednonogov V.S.
+l_NOP_	EQU 0
+l_OR_	EQU #B6
+l_XOR_	EQU #AE
+l_AND_	EQU #A6
+l_NEG_	EQU #2F
+
+l_PUTATR	m_PUSH_S
+	LD A,31
+	SUB L
+	JR C,l_RETPAT
+	INC A
+	CP B
+	JR C,l_PUTAT0
+	LD A,B
+l_PUTAT0	SUB B
+	NEG
+	LD (l_PUTAT4+1),A
+	SUB B
+	NEG
+	LD (l_PUTAT2+1),A
+	LD A,H
+	RRCA
+	RRCA
+	RRCA
+	LD B,A
+	AND %11100000
+	OR L
+	LD L,A
+	LD A,B
+	AND %0000011
+l_SELAT1	ADD A,#58
+	LD H,A
+l_PUTAT1	LD A,H
+l_SELAT2	CP #5B
+	JR NC,l_RETPAT
+	PUSH HL
+l_PUTAT2	LD B,#FF
+l_PUTAT3	LD A,(DE)
+	INC DE
+	LD (HL),A
+	INC HL
+	DJNZ l_PUTAT3
+l_PUTAT4	LD HL,0
+	ADD HL,DE
+	EX DE,HL
+	POP HL
+	LD A,L
+	ADD A,%00100000
+	LD L,A
+	JR NC,l_PUTAT7
+	INC H
+l_PUTAT7	DEC C
+	JR NZ,l_PUTAT1
+l_RETPAT	m_POP_S
+	JP LAY_MKATR
+
+l_PUTSIM	m_PUSH_S	;HL(0-23,0-31)
+	LD A,31
+	SUB L
+	JR C,l_RETSIM
+	INC A
+	CP B
+	JP C,l_PUTSI0
+	LD A,B
+l_PUTSI0	SUB B
+	NEG
+	LD (l_PUTSI4+1),A
+	SUB B
+	NEG
+	LD (l_PUTSI2+1),A
+l_PUTSI1	LD A,H
+	CP 24
+	JR NC,l_RETSIM
+	PUSH HL
+	PUSH DE
+	EX DE,HL
+	CALL l_SCOORD
+	POP DE
+l_PUTSI2	LD B,0
+	PUSH HL
+l_PUTSI3	LD A,(DE)
+	INC DE
+l_PUTSID	OR (HL)
+	LD (HL),A
+	INC L
+	DJNZ l_PUTSI3
+l_PUTSI4	LD HL,0
+	ADD HL,DE
+	EX DE,HL
+	POP HL
+	INC H
+	LD A,%00000111
+	AND H
+	JR NZ,l_PUTSI2
+	POP HL
+	INC H
+	DEC C
+	JR NZ,l_PUTSI1
+l_RETSIM	m_POP_S
+	JP LAY_MKSIM
+
+l_PRINBT	DEFB 0
+l_PRINT	PUSH AF
+	LD (l_PRINBT),A
+	LD A,D
+	CP 24
+	JR NC,l_RETPRI
+l_PRIN2	LD A,E
+	CP 32
+	JR C,l_PRIN9
+	LD E,0
+	INC D
+	LD A,D
+	CP 24
+	JR NC,l_RETPRI
+l_PRIN9	m_PUSH_S
+l_PRIN8	LD L,(HL)
+	LD H,0
+	ADD HL,HL
+	ADD HL,HL
+	ADD HL,HL
+	ADD HL,BC
+	PUSH HL
+	CALL l_SCOORD
+l_PRINR	POP DE
+	LD B,8
+l_PRIN1	LD A,(DE)
+l_PRINCD	OR (HL)
+	LD (HL),A
+	INC DE
+	INC H
+	DJNZ l_PRIN1
+	m_POP_S
+	INC HL
+	INC E
+	LD A,(l_PRINBT)
+	DEC A
+	LD (l_PRINBT),A
+	JR NZ,l_PRIN2
+l_RETPRI	POP AF
+	RET
+
+l_GETSIM	m_PUSH_S
+	LD A,B
+	LD (l_GETSI2+1),A
+l_GETSI1	PUSH HL
+	PUSH DE
+	EX DE,HL
+	CALL l_SCOORD
+	POP DE
+l_GETSI2	LD B,0
+	PUSH HL
+l_GETSI3	LD A,(HL)
+	LD (DE),A
+	INC DE
+	INC L
+	DJNZ l_GETSI3
+	POP HL
+	INC H
+	LD A,%00000111
+	AND H
+	JR NZ,l_GETSI2
+	POP HL
+	INC H
+	DEC C
+	JR NZ,l_GETSI1
+	m_POP_S
+	RET
+
+l_SELAT3	DEFB 0,0	; (GETATR: never called - room for xlie.asm HLINE; SELSCR still writes its operand)
+
+l_SELSCR	LD (l_SCOSCR+1),A	;A-screen address
+	LD (l_BCOSCR+1),A
+	LD (l_PCOSCR+1),A
+	ADD A,#18
+	LD (l_SELAT1+1),A	; A-attr address
+	LD (l_SELAT3+1),A
+	ADD A,3
+	LD (l_SELAT2+1),A
+	RET
+
+l_PUTSPR	m_PUSH_S	;(de)--(hl)(0-191,0-255):b*c
+	LD A,L
+	AND %00000111
+	LD (l_SHIFTS+1),A
+	LD A,L
+	AND %11111000
+	RRCA
+	RRCA
+	RRCA
+	LD L,A
+	LD A,B
+l_PUTSP0	LD (l_PUTSP2+1),A
+l_PUTSP2	LD B,0
+	LD A,H
+	CP %11000000
+	JR NC,l_RETPSP
+	PUSH HL
+	PUSH DE
+	EX DE,HL
+	CALL l_BCOORD
+	POP DE
+l_PUTSP1	PUSH BC
+	XOR A
+	LD C,A
+l_SHIFTS	OR 0
+	LD B,A
+	LD A,(DE)
+	JR Z,l_PTSPD1
+l_SHFTDO	RRA
+	RR C
+	DJNZ l_SHFTDO
+l_PTSPD1	OR (HL)
+	LD (HL),A
+	LD A,L
+	AND %00011111
+	CP %00011111
+	JR NC,l_PUTSP6
+	LD A,C
+	INC L
+l_PTSPD2	OR (HL)
+	LD (HL),A
+	INC DE
+	POP BC
+	DJNZ l_PUTSP1
+l_PUTSP3	POP HL
+	INC H
+	DEC C
+	JR NZ,l_PUTSP2
+l_RETPSP	m_POP_S
+	JP LAY_MKSPR
+l_PUTSP6	POP BC
+l_PUTSP7	INC DE
+	DJNZ l_PUTSP7
+	JR l_PUTSP3
+
+l_BCOORD	LD A,D	;de(0-191,0-31) -- hl
+	RRCA
+	RRCA
+	RRCA
+	AND %00011000
+	LD H,A
+	LD A,D
+	AND %00000111
+	ADD A,H
+l_BCOSCR	ADD A,%01000000
+	LD H,A
+	LD A,D
+	RLA
+	RLA
+	AND %11100000
+	OR E
+	LD L,A
+	RET
+
+l_PUTSCR	m_PUSH_S	;(de)--(hl)(0-191,0-31):b*c
+	LD A,31
+	SUB L
+	JR C,l_RETPTS
+	INC A
+	CP B
+	JR C,l_PUTSCB
+	LD A,B
+l_PUTSCB	SUB B
+	NEG
+	LD (l_PUTSC4+1),A
+	SUB B
+	NEG
+	LD (l_PUTSC2+1),A
+l_PUTSC2	LD B,0
+	LD A,H
+	CP %11000000
+	JR NC,l_RETPTS
+	PUSH HL
+	PUSH DE
+	EX DE,HL
+	CALL l_BCOORD
+	POP DE
+l_PUTSC1	LD A,(DE)
+l_PUTSCD	OR (HL)
+	LD (HL),A
+	INC DE
+	INC L
+	DJNZ l_PUTSC1
+l_PUTSC4	LD HL,0
+	ADD HL,DE
+	EX DE,HL
+	POP HL
+	INC H
+	DEC C
+	JR NZ,l_PUTSC2
+l_RETPTS	m_POP_S
+	JP LAY_MKPSC
+
+l_SCOORD	LD A,D	;de(0-23,0-31)--hl
+	AND %00011000
+l_SCOSCR	ADD A,%01000000
+	LD H,A
+	LD A,D
+	RRCA
+	RRCA
+	RRCA
+	AND %11100000
+	OR E
+	LD L,A
+	JP LAY_MKSC
+
+l_LINE	m_PUSH_S	; line from p1(l,h) to p2(e,d)
+	PUSH IX
+	LD IX,l_DATA01
+	LD B,#15
+	LD C,#1D
+	LD A,E
+	SUB L
+	JR NC,l_M1LIN
+	NEG
+	EX DE,HL
+l_M1LIN	LD L,A
+	LD A,D
+	SUB H
+	JR NC,l_M2LIN
+	NEG
+	DEC B
+l_M2LIN	LD H,A
+	CP L
+	JR C,l_M3LIN
+	LD A,B
+	LD B,C
+	LD C,A
+	LD A,H
+	LD H,L
+	LD L,A
+l_M3LIN	LD A,B
+	LD (l_DEPENC),A
+	LD A,C
+	LD (l_INDEPC),A
+	PUSH DE
+	LD C,L
+	LD E,L
+	LD L,H
+	CALL l_DIVB
+	LD A,E
+	LD (l_SIMLIN+1),A
+	LD L,C
+	LD A,L
+	LD (l_LDLIN+1),A
+	LD A,D
+	LD (l_DECLIN+1),A
+	OR A
+	LD B,E
+	RR B
+	INC B
+	OR A
+	RR C
+	POP DE
+	INC L
+	JR l_L4LIN
+l_SIMLIN	LD B,#FF
+l_L4LIN	PUSH HL
+	CALL l_DOT
+	POP HL
+l_INDEPC	DEC D
+	DEC L
+	JR Z,l_RETLIN
+	LD A,C
+l_DECLIN	SUB #02
+	LD C,A
+	JR C,l_LDLIN
+	DJNZ l_L4LIN
+l_DEPENC	DEC E
+	JR l_SIMLIN
+l_LDLIN	ADD A,#FF
+	LD C,A
+	JR l_L4LIN
+l_RETLIN	POP IX
+	m_POP_S
+	RET
+
+l_PCOORD	LD A,D	;de(0-191,0-255) -- hl
+	RRCA
+	RRCA
+	RRCA
+	LD L,A
+	AND %00011000
+	LD H,A
+	LD A,D
+	AND %00000111
+	ADD A,H
+l_PCOSCR	ADD A,%01000000
+	LD H,A
+	LD A,L
+	LD L,E
+	RRA
+	RR L
+	RRA
+	RR L
+	RRA
+	RR L
+	JP LAY_MKHL
+
+l_DATA01	DEFB 128,64,32,16,8,4,2,1
+l_OUTBT	OR (HL)
+	LD (HL),A
+	RET
+
+l_DOT	LD A,D	;POINT(X:=E,Y:=D)
+	CP %11000000
+	RET NC
+	LD A,E
+	AND %00000111
+	LD (l_DCDOT+2),A
+	CALL l_PCOORD
+l_DCDOT	LD A,(IX+0)
+l_DOTREG	OR (HL)
+	LD (HL),A
+	RET
+
+l_CHNGRG	LD (l_OUTBT),A
+	LD (l_PUTSCD),A
+	LD (l_DOTREG),A
+	LD (l_PTSPD1),A
+	LD (l_PTSPD2),A
+	LD (l_PUTSID),A
+	LD (l_PRINCD),A
+	RET
+
+l_PLOT	PUSH IX	;*********PLOT E,D
+	PUSH HL
+	LD IX,l_DATA01
+	CALL l_DOT
+	POP HL
+	POP IX
+	RET
+
+	;MATHEMATICAL LIBRARY  MATH-ZX
+l_FREE16	DEFW #F5F5
+l_MULB2	PUSH HL	;HL*E--DE  (C)
+	JR l_MULENT
+l_MULB	PUSH HL	;L*E--DE
+	LD H,0
+l_MULENT	LD A,E
+	LD E,0
+	LD D,E
+	JR l_MMULB2
+l_MMULB1	ADD HL,HL
+	JR C,l_ENDMUL
+l_MMULB2	OR A
+	JR Z,l_ENDMUL
+	RRA
+	JR NC,l_MMULB1
+	EX DE,HL
+	ADD HL,DE
+	EX DE,HL
+	JR l_MMULB1
+l_ENDMUL	POP HL
+	RET
+l_MUL	PUSH HL	;HL*DE--DE
+	XOR A
+	OR D
+	JR Z,l_MULENT
+	EX DE,HL
+	XOR A
+	OR D
+	JR Z,l_MULENT
+	SCF
+	POP HL
+	RET
+l_DIVB	LD D,0	;E/L--E (MOD in D)
+l_DIVB2	PUSH HL	;DE/L--E
+	PUSH BC
+	LD B,8
+	EX DE,HL
+	LD D,E
+	LD E,0
+l_DIV1B	OR A
+	RR D
+	RR E
+	SBC HL,DE
+	JR NC,l_MDIVB
+	ADD HL,DE
+l_MDIVB	RLA
+	DJNZ l_DIV1B
+	CPL
+	LD D,L
+	LD E,A
+	POP BC
+	POP HL
+	RET
+
+l_SYMBOL	PUSH HL	;in L -sym.code
+	LD H,L
+	LD L,#21
+	LD (l_PRIN8),HL
+	CALL l_PRINT
+	LD HL,#266E
+	LD (l_PRIN8),HL
+	POP HL
+	RET
+
+l_ATRBAR	PUSH HL	; A -ATTR
+	LD H,A
+	LD L,#3E
+	LD (l_PUTAT3),HL
+	POP HL
+	CALL l_PUTATR
+	PUSH HL
+	LD HL,#131A
+	LD (l_PUTAT3),HL
+	POP HL
+	RET
+
+l_SIMBAR	PUSH HL
+	LD H,A	; A-filled byte
+	LD L,#3E
+	LD (l_PUTSI3),HL
+	POP HL
+	CALL l_PUTSIM
+	PUSH HL
+	LD HL,#131A
+	LD (l_PUTSI3),HL
+	POP HL
+	RET
+	; GrLib end
+	MACRO m_ATR_S p0,p1,p2
+	LD HL,p0
+	LD BC,p1
+	LD A,p2
+	CALL l_ATRBAR
+	ENDM
+	MACRO m_BYT_S p0,p1,p2
+	LD HL,p0
+	LD BC,p1
+	LD A,p2
+	CALL l_SIMBAR
+	ENDM
+	MACRO m_SYM_S p0,p1,p2
+	LD DE,p0
+	LD A,p1
+	LD L,p2
+	CALL l_SYMBOL
+	ENDM
+	MACRO m_CHN_S p0
+	LD A,p0
+	CALL l_CHNGRG
+	ENDM
+
+
+	;Декомпрессор
+	;HL-откуда DE-куда
+l_DLPCB	DS 4
+l_DELPC	PUSH DE
+	LD DE,l_DLPCB
+	LD BC,4
+	LDIR
+	POP DE
+l_xpD0	LD A,(HL)
+	BIT 7,A
+	JR NZ,l_xpD1
+	PUSH AF
+	AND 1
+	LD B,A
+	LD A,(HL)
+	AND #E
+	RRCA
+	ADD A,3
+	LD C,A
+l_xpD0X	INC HL
+	LD A,E
+	SUB (HL)
+	INC HL
+	PUSH HL
+	LD L,A
+	LD A,D
+	SBC A,B
+	LD H,A
+	LD B,0
+	LDIR
+l_D00	POP HL
+	POP AF
+	RLCA
+	RLCA
+	RLCA
+	RLCA
+	AND #F
+	JR Z,l_xpD0
+	JR l_xpDRR
+l_xpD1	INC HL
+	BIT 6,A
+	JR NZ,l_xpD2
+	AND #3F
+	JR Z,l_xpDEND
+l_xpDRR	LD C,A
+l_xpDL2	LD A,(HL)
+	RRCA
+	LD (DE),A
+	INC HL
+	INC DE
+	DEC C
+	JR NZ,l_xpDL2
+	JR l_xpD0
+l_xpDLO	LD A,(HL)	;неразрушающий
+	RRCA
+	LD (DE),A
+	INC DE
+	INC HL
+	DEC C
+	JP NZ,l_xpDLO
+	JR l_xpD0
+l_xpD2	AND #3F
+	ADD A,4
+	LD C,A
+	LD A,(HL)
+	PUSH AF
+	AND #F
+	LD B,A
+	JR l_xpD0X
+l_xpDEND	LD HL,l_DLPCB
+	LD C,4
+	LDIR
+	RET
+
+	;XECUTE MOUSE
+	;TAKE COORDINATES FROM CURPOS==MX
+
+l_MOUSE	JP LAY_MOUSE
+
+l_COORD	DEFW #8FE4
+l_MX	EQU l_COORD
+l_MY	EQU l_MX+1
+l_OLDCO	DEFW 0	;WORKING
+
+	MACRO m_M_S p0
+	LD A,p0
+	CALL l_MEM
+	ENDM
+
+	MACRO m_push_S 
+	PUSH BC
+	PUSH HL
+	ENDM
+	MACRO m_pop_S 
+	POP HL
+	POP BC
+	ENDM
+	MACRO m_WRD_S p0,p1
+	LD HL,p0
+	LD (l_SX),HL
+	LD A,p1
+	CALL l_NWRDM
+	ENDM
+
+	;=========================================Мeнeджер памяти
+
+l_PT128	LD A,6	;Cтандартная страница
+	JR l_MEM
+
+l_MEM7	LD A,7
+l_MEM	OR %11011000
+l__128	LD BC,#7FFD
+	OUT (C),A
+	RET
+
+l_OFFD	LD DE,l_DSCR+#1AFE
+	JR l_offx
+
+l_OFFS	CALL l_MEM7
+	LD DE,l_SCR+#1AFE
+l_offx	PUSH DE
+	POP HL
+	INC HL
+	LD BC,768
+	LD (HL),0
+	LDDR
+	LD BC,6143
+	LD (HL),255
+	LDDR
+	JP LAY_MKOFF
+
+l_COLOR	DEFB #38,#68
+
+l_COPY	;копир.экр
+	LD BC,6144
+l_CY_	LD HL,l_DSCR
+	LD DE,l_SCR
+	LDIR
+	JP LAY_MKALL
+
+l_COPYAT	LD BC,6912
+	JR l_CY_
+
+l_MNU	CALL l_INIMNU	;Вывод меню с ожид.
+	CALL l_MENU
+	CALL l_MEM7
+	LD HL,#FFFF
+	LD (l_MBEG),HL
+	CALL l_COPYAT
+l_MnU	CALL l_MARK_
+	JR C,l_MnU
+l_MNu	CALL l_MARK_
+	RET C
+	JR l_MNu
+
+l_STD	LD A,l_DSCR/256	;выбор экрана
+	JR l_STDS
+
+l_STS	LD A,l_SCR/256
+l_STDS	CALL l_SELSCR
+	XOR A
+	JP l_CHNGRG
+
+
+	;поиск по таблицам
+l_BT	PUSH HL
+	ADD A,L
+	LD L,A
+	JR NC,l_BT_
+	INC H
+l_BT_	LD A,(HL)
+	POP HL
+	RET
+
+l_WT	RLCA
+	ADD A,L
+	LD L,A
+	JR NC,l_WT_
+	INC H
+l_WT_	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A
+	RET
+
+	;описатели вода текста
+l_SX	DEFB 0
+l_SY	DEFB 0
+l_TXT	DEFW 0
+l_HIGH	DEFB 0	;высота(1/0)
+
+	;вывод слова
+l_WORDHL	LD (l_TXT),HL
+l_WORD	LD HL,(l_TXT)
+	LD A,(HL)
+	INC HL
+	LD (l_TXT),HL
+	CP #80
+	JR NC,l_Compr
+	CP #7E
+	RET NC
+	CALL l_LETTER
+	JR l_WORD
+l_Compr	AND #7F
+	LD HL,l_TWCMPR
+	CALL l_WT
+	PUSH HL
+	LD A,L
+	CALL l_LETTER
+	POP HL
+	LD A,H
+	CALL l_LETTER
+	JR l_WORD
+
+l_LETTER	LD L,A
+	LD H,0
+	LD A,(l_SY)
+	CP 24
+	JR NC,l_W2
+	ADD HL,HL
+	ADD HL,HL
+	ADD HL,HL
+	LD BC,l_FONT
+	ADD HL,BC
+	LD DE,(l_SX)
+	LD A,(l_HIGH)
+	OR A
+	JR NZ,l_WH2
+	PUSH HL
+	CALL l_SCOORD
+l_LETR	POP DE
+	LD B,8
+l_WH1	LD A,(DE)
+	LD (HL),A
+	INC DE
+	INC H
+	DJNZ l_WH1
+	JR l_W2
+l_WH2	LD C,2
+l_WH21	PUSH DE
+	PUSH HL
+	CALL l_SCOORD
+l_TALR	POP DE
+	LD B,4
+l_WH22	LD A,(DE)
+	INC DE
+	LD (HL),A
+	INC H
+	LD (HL),A
+	INC H
+	DJNZ l_WH22
+	EX DE,HL
+	POP DE
+	INC D
+	DEC C
+	JR NZ,l_WH21
+l_W2	LD A,(l_SX)
+	INC A
+	CP 32
+	JR C,l_W3
+	XOR A
+l_W3	LD (l_SX),A
+	RET
+
+	;вывод текста
+l_TEXT	LD (l_TXT),HL	;выв.текста
+l_TT	CALL l_WORD
+	PUSH AF
+	LD HL,(l_SX)
+	LD L,0
+	INC H
+	LD A,(l_HIGH)
+	AND A
+	JR Z,l_TQ
+	INC H
+l_TQ	LD (l_SX),HL
+	POP AF
+	JR Z,l_TT
+	RET
+
+l_MWINX	DEFB 1
+l_MWINY	DEFB 1
+l_MMOV	CALL l_CONTR
+l_MMOV_	LD C,A
+	LD HL,(l_MX)
+	RR C
+	JR NC,l__1A
+	INC L
+	INC L
+l__1A	LD A,252
+	CP L
+	JR NC,l__1
+	LD L,A
+l__1	RR C
+	JR NC,l__2A
+	DEC L
+	DEC L
+l__2A	LD A,(l_MWINX)
+	CP L
+	JR C,l__2
+	INC A
+	LD L,A
+l__2	RR C
+	JR NC,l__3A
+	INC H
+	INC H
+l__3A	LD A,187
+	CP H
+	JR NC,l__3
+	LD H,A
+l__3	RR C
+	JR NC,l__4A
+	DEC H
+	DEC H
+l__4A	LD A,(l_MWINY)
+	CP H
+	JR C,l__4
+	INC A
+	LD H,A
+l__4	LD (l_MX),HL
+	RR C
+	RET
+
+	;---------NUMERIC I/O------
+l_DCM	DEFW 51712,15258
+	DEFW 57600,1525
+	DEFW 38528,152
+	DEFW 16960,15
+	DEFW 34464,1
+	DEFW 10000,0
+	DEFW 1000,0
+	DEFW 100,0
+	DEFW 10,0
+	DEFW 1,0
+
+l_WTRB	LD L,A	;байт в DCS
+	LD H,0
+l_WTRW	EXX	;слово в DCS
+	LD HL,0
+	EXX
+l_WTRD	PUSH IX	;двойное слово в DCS
+	LD A,15
+	LD (l_WWB+1),A
+	LD IX,l_DCM
+	LD BC,l_DCS
+	EX AF,AF'
+	LD A,10
+l_WWW	CP 1
+	PUSH AF
+	EX AF,AF'
+	POP AF
+	JR NZ,l_WW5
+	XOR A
+	LD (l_WWB+1),A
+l_WW5	PUSH BC
+	LD C,0
+	LD E,(IX)
+	LD D,(IX+1)
+	EXX
+	LD E,(IX+2)
+	LD D,(IX+3)
+	EXX
+	INC IX
+	INC IX
+	INC IX
+	INC IX
+l_WWM	CALL l_SUBD
+	INC C
+	JR NC,l_WWM
+	DEC C
+	CALL l_ADDD
+	LD A,C
+	OR A
+	JR Z,l_WWB
+	XOR A
+	LD (l_WWB+1),A
+	JR l_WW4
+l_WWB	LD C,0
+l_WW4	LD A,C
+	POP BC
+	LD (BC),A
+	INC BC
+	EX AF,AF'
+	DEC A
+	JR NZ,l_WWW
+	POP IX
+	RET
+
+l_DCS	DEFM "cooperfeet"
+	DEFB 126,103,126	;$
+
+l_SUBDW	EXX
+	LD DE,0
+	EXX
+l_SUBD	OR A
+	SBC HL,DE
+	EXX
+	SBC HL,DE
+	EXX
+	RET
+
+l_ADDDW	EXX
+	LD DE,0
+	EXX
+l_ADDD	ADD HL,DE
+	EXX
+	ADC HL,DE
+	EXX
+	RET
+
+	;вывод байта
+l_WBHL	LD A,(HL)
+l_WB	m_PUSH_S
+	EXX
+	PUSH DE
+	PUSH HL
+	EXX
+	CALL l_WTRB
+	LD HL,l_DCS+7
+	JR l_WX
+	;вывод слова
+l_WW	m_PUSH_S
+	EXX
+	PUSH DE
+	PUSH HL
+	EXX
+	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A
+	CALL l_WTRW
+	LD HL,l_DCS+5
+	JR l_WX
+	;вывод двойного слова
+l_WD	m_PUSH_S
+	EXX
+	PUSH DE
+	EXX
+	LD E,(HL)
+	INC HL
+	LD D,(HL)
+	INC HL
+	LD C,(HL)
+	INC HL
+	LD B,(HL)
+	PUSH BC
+	EXX
+	EX (SP),HL
+	EXX
+	EX DE,HL
+	CALL l_WTRD
+	LD HL,l_DCS
+l_WX	CALL l_WORDHL
+	EXX
+	POP HL
+	POP DE
+	EXX
+	m_POP_S
+	RET
+
+	;==================Прямая траектория
+l_LINini	LD B,#15	;инициализ. линии (DE->hl)
+	LD C,#1D
+	LD A,E
+	SUB L
+	JR NC,l_M1l
+	NEG
+	DEC C
+l_M1l	LD L,A
+	LD A,D
+	SUB H
+	JR NC,l_M2l
+	NEG
+	DEC B
+l_M2l	LD H,A
+	CP L
+	JR C,l_M3l
+	LD A,B
+	LD B,C
+	LD C,A
+	LD A,H
+	LD H,L
+	LD L,A
+l_M3l	LD A,B
+	LD (l_DENC),A
+	LD A,C
+	LD (l_INDC),A
+	PUSH DE
+	LD C,L
+	LD E,L
+	LD L,H
+	CALL l_DIVB
+	LD A,E
+	LD (l_SIMl+1),A
+	LD L,C
+	LD A,L
+	LD (l_LDl+1),A
+	LD A,D
+	LD (l_DECl+1),A
+	OR A
+	LD B,E
+	RR B
+	INC B
+	OR A
+	RR C
+	POP DE
+	INC L
+	LD A,L
+	LD (l_LIN_LN),A
+	LD (l_LIN_BC),BC
+	LD (l_LIN_XY),DE
+	RET
+
+l_LIN_BC	DEFW 0
+l_LIN_XY	DEFW 0	;тек.поз
+l_LIN_LN	DEFB 0	;длина
+
+l_LINnxt	;след. точка  (DE)
+	LD BC,(l_LIN_BC)
+	LD DE,(l_LIN_XY)
+l_LINnx_
+l_INDC	DEC D
+	LD A,C
+l_DECl	SUB 00
+	LD C,A
+	JR C,l_LDl
+	DJNZ l_L4RT
+l_DENC	DEC E
+l_SIMl	LD B,#FF
+	JR l_L4RT
+l_LDl	ADD A,#FF
+	LD C,A
+l_L4RT	LD (l_LIN_BC),BC
+	LD (l_LIN_XY),DE
+	RET
+
+	;--------------- Звук -----------------
+l_EXS1	;ракетн, диср, термоп, Г-пушка, взрывы
+	DEFB 7,%11010010,6,1,4,99,8,16,10,16,5,#C,1,#F,12,70,13,1
+	DEFB 255
+
+l_SOU0	;ракетница, диср
+	DEFB 7,%11111010,0,0,4,33,8,16,10,16,5,9,1,#E,12,130,13,1
+	DEFB 255
+
+l_SOU4	;термоп
+	DEFB 7,%11111110,0,0,8,16,1,#C,12,144,13,1
+	DEFB 255
+
+l_SOU5	;Г-пушка
+	DEFB 7,%11111010,0,10,4,15,8,16,10,16,5,9,1,9,12,125,13,1
+	DEFB 255
+
+l_EXS3	;морт,руж,гарп,газ
+	DEFB 7,%11010111,6,17,12,26,13,1
+	DEFB 255
+
+l_SOU2	; волн.р & м, MC-контр
+	DEFB 7,%11010010,6,1,4,100,8,16,10,16,5,12,1,10,12,20,13,1
+	DEFB 255
+
+l_SOU6	; гарп
+	DEFB 7,%11010010,6,15,8,16,10,16,5,7,1,7,12,9,13,1
+	DEFB 255
+
+l_TCH7	;резаки
+	DEFB 7,%11111010,8,16,10,16,5,8,1,9,12,16,13,1
+	DEFB 255
+
+l_TCH8	;шок, аптечка, тент
+	DEFB 7,%11111010,8,16,1,9,12,3,13,1
+	DEFB 255
+
+l_SOU9	; газ.р
+	DEFB 7,%11011010,6,1,4,10,8,16,10,16,5,14,1,14,12,14,13,1
+	DEFB 255
+
+l_BEP10	;beep
+	DEFB 7,%11111010,4,200,8,16,10,16,5,1,1,1,12,7,13,1
+	DEFB 255
+
+l_tSOUND	DEFW l_SOU0,l_EXS1,l_SOU2,l_EXS3,l_SOU4,l_SOU5,l_SOU6,l_TCH7,l_TCH8,l_SOU9,l_BEP10
+
+l_NOTA	DEFW 1	;текущ нота
+l_iSOUND	;инициализ мелодии #A
+	LD HL,l_tSOUND
+	CALL l_WT
+	LD (l_NOTA),HL
+	RET
+
+l_SOUNDn	CALL l_iSOUND	;играть звук А
+
+	;форматы нот
+	;(254) - конец ноты
+	;(255) - конец мелодии
+	;(0..15) - регистр, (N) - значение
+l_pSOUND	;вып. ноту мелодии
+	LD HL,(l_NOTA)
+l_pS0	LD A,(HL)
+	CP 254
+	JR Z,l_pS1
+	RET NC
+	LD BC,#FFFD
+	OUT (C),A
+	INC HL
+	LD A,(HL)
+	LD B,#BF
+	OUT (C),A
+	INC HL
+	LD (l_NOTA),HL
+	JR l_pS0
+l_pS1	INC HL
+	LD (l_NOTA),HL
+	RET

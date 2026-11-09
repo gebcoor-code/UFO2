@@ -1,0 +1,24 @@
+wait 500
+click
+wait 300
+at 288 22
+wait 5
+click
+wait 300
+at 200 120
+wait 8
+click
+wait 60
+at 160 155
+wait 8
+click
+wait 60
+at 289 100
+wait 8
+click
+wait 60
+at 319 60
+wait 100
+at 100 199
+wait 100
+shot H

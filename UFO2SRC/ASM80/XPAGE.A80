@@ -1,0 +1,66 @@
+;содержимое страниц
+;СТРАНИЦЫ: c #C000
+;0: #C000:
+;1: #C000:T(256<),TWCMPR(256),WORDS,MENUS,PEDIA,NAMES
+;2: *main*
+;3: #C000:xSprites,xSHIP,xUFO
+;4: #C000:xHERO(12k=8*16*96),#F000:xDIE(768),#F300:xBOOM(768),#F600
+;5: *main*
+;6: *swap*
+;7: #C000:SCR,#D800:ATR,#DB00:
+*P4 ***********Страница 4***********
+	ORG #C000
+xHERO
+*B ..\data\xhero.dat
+xDIE	EQU xHERO+#3000
+xBOOM	EQU xDIE+#300
+xBUM	EQU xBOOM+#300
+xBULL	EQU xBUM+#480
+xSHIP
+*B ..\ZX_DISC\XM0.LPC
+	DEFR #FFFE-$
+*P3 ***********Cтраница 3***********
+	ORG #C000
+xEARTH
+*B ..\data\xsprites.dat
+xWEAPON	EQU xEARTH+2880
+xBUTTON EQU xEARTH+3840
+xWBUTTN EQU xBUTTON+128
+xBBUTTN EQU xWBUTTN+96
+xSIGN	EQU xEARTH+4192
+xPARAM	EQU xEARTH+5056
+xKEY	EQU xEARTH+5536
+xPLUS	EQU xKEY+576
+xLABEL	EQU xEARTH+6304
+xMAP	EQU xEARTH+7136
+xMARKER
+*B ..\ZX_DISC\xmarker.dat
+xUFO	
+*B ..\ZX_DISC\XM1.LPC
+xL0
+*B ..\ZX_DISC\XL0.LPC
+xL1
+*B ..\ZX_DISC\XL1.LPC
+*P1 ***********Cтраница 1***********
+	ORG #C000
+T
+*B ..\data\x256.dat
+TWCMPR
+*B ..\data\xcompres.dat
+WORDS
+*B ..\data\xword.dat
+MENUS
+*B ..\data\xmenu.dat
+PEDIA
+*B ..\data\xfopedia.dat
+NAMES
+*B ..\data\xname.dat
+	DEFR #FFFE-$
+*P7 ***********Cтраница 7***********
+	ORG #C000
+
+*B ..\IMAGES\XHIST.SCR
+	DEFS 1024,0
+	DEFM " No room for STS 4.x!  Please reload..."
+
+*P0

@@ -1,0 +1,235 @@
+	;*L-
+	;*Z80
+;*O
+;*M-
+;*D-
+	MACRO m_D_S  ;debug
+	DI
+	HALT
+	ENDM
+
+	MACRO m_PUSH_S 
+	PUSH HL
+	PUSH DE
+	PUSH BC
+	ENDM
+	MACRO m_POP_S 
+	POP BC
+	POP DE
+	POP HL
+	ENDM
+
+LAY_DREAD	EQU #0103
+LAY_DWRITE	EQU #0106
+LAY_MOUSE	EQU #0109
+LAY_YN	EQU #010C
+LAY_ALEXQ	EQU #010F
+LAY_VIEW	EQU #0112
+LAY_GEO	EQU #0115
+LAY_ZXM	EQU #0118
+LAY_EGA	EQU #011B
+LAY_MKHL	EQU #011C
+LAY_MKALL	EQU #011F
+LAY_MKATR	EQU #0122
+LAY_MKLN	EQU #0125
+LAY_MKSC	EQU #0128
+LAY_MKSIM	EQU #012B
+LAY_MKSPR	EQU #012E
+LAY_MKPSC	EQU #0131
+LAY_SCRL	EQU #0134
+LAY_SCRE	EQU #0137
+LAY_BAND	EQU #013A
+LAY_FD2	EQU #013D
+LAY_FD1	EQU #0140
+LAY_FDC	EQU #0143
+LAY_FALL	EQU #0146
+LAY_FPAD	EQU #0149
+LAY_OUTD	EQU #014C
+LAY_PROG	EQU #014F
+LAY_TUINF	EQU #0152
+LAY_MKOFF	EQU #0153
+LAY_XYHL	EQU #0156
+LAY_BXY	EQU #0159
+LAY_BAT	EQU #015B
+LAY_RXE	EQU #015E
+LAY_NAME	EQU #015F
+LAY_NAMP	EQU #0162
+LAY_DSK	EQU #0165
+LAY_BDC	EQU #0168
+LAY_PMP	EQU #3DE0
+	INCLUDE "xpage.asm"
+	ORG #4000+16
+	; ENT $
+l_JP_ST	JP l_xSTART	;вх.
+	DS #4040-$,0	; DEFR
+	;Interupt entry
+l_INTRP	PUSH HL
+	LD HL,l_SEED
+	INC (HL)
+	JR NZ,l_INTR2
+	INC HL
+	INC (HL)
+l_INTR2	POP HL
+	EI
+	RETI
+l_SEED	DEFW 1	;счётчик
+l_NRFT	DEFB 1	;для XIO
+	;Interupt table
+	;==================================обслуживание клавиатуры
+l_PRSROW	IN A,(C)
+	CPL
+	AND #1F
+	RET
+
+	;TMO LD A,(KEYJOY)
+	; OR A
+	; JR NZ,TMOJOY
+	; LD C,#FE
+	; LD B,C
+	;TMOO CALL PRSROW
+	; JR NZ,TMOOK
+	; RLC B
+	; JR TMOO
+	;TMOOK LD C,A
+	; RET
+	;TMOJOY CALL CONTR
+	; OR A
+	; JR Z,TMOJOY
+	; RET
+
+l_PRSKEY	PUSH BC
+	LD C,#FE
+	CALL l_PRSROW
+	POP BC
+	AND C
+	RET
+
+l_CONTR	m_PUSH_S
+	LD A,(l_KEYJOY)
+	XOR A
+	JR l_CO2
+	LD C,#1F
+	CALL l_PRSROW
+	XOR #1F
+l_CO2	LD (l_CONTRB),A
+	LD A,1
+	LD (l_PMOUSE),A
+	CALL l_MOUSE
+	m_POP_S
+	LD A,(l_CONTRB)
+	RET
+l_CO1	LD HL,(l_KEYS)
+	LD E,0
+	LD D,5
+l_CO3	LD C,(HL)
+	INC HL
+	LD B,(HL)
+	CALL l_PRSKEY
+	JR Z,l_CO4
+	SET 5,E
+l_CO4	RRC E
+	DEC D
+	INC HL
+	JR NZ,l_CO3
+	LD A,E
+	JR l_CO2
+
+l_DELAY	EI
+	HALT
+l_DLDI	DI
+	DEC A
+	JR NZ,l_DELAY
+	RET Z
+
+	;*************Параметры настройки игры**
+l_C_ONOF	DEFB 0	;0-вкл/1-выкл
+l_KEYN	DEFB 0
+l_KEYS	DEFW l_KBR
+l_KEYJOY	DEFB 0	;(1-K.-stick)
+l_PMOUSE	DEFB 0	;(1-K.-mouse)
+
+l_CFGLEN	EQU $-l_C_ONOF
+	;***************************************
+l_CONTRB	DEFB 0
+l_KBR	DEFW #DF01,#DF02,#FD01,#FB01,#7F07
+l_KBR2	DEFW #7F04,#7F08,#FE02,#FD01,#7F03
+l_INT2	DEFW #EF08,#EF10,#EF04,#EF02,#EF01
+l_KUR	DEFW #EF04,#F710,#EF10,#EF08,#EF01	;;;
+
+l_RND	PUSH HL
+	LD HL,(l_RNA)
+	INC HL
+	;;; LD A,R
+	;;; ADD A,H
+	LD A,H	;;;
+	AND #1F
+	LD H,A
+	LD A,(l_RNB)
+	RRCA
+	XOR (HL)
+	ADD A,L
+	LD (l_RNA),HL
+	LD (l_RNB),A
+	POP HL
+	RET
+
+	DS #4100-$,0	; DEFR
+	DS 257,#40
+
+l_xSTART	DI
+	LD SP,#4030
+	CALL l_START1	;нач.уст.защиты
+	LD A,2
+	OUT (254),A
+	;ост после защиты
+
+	XOR A
+	OUT (254),A
+	CALL l_JP_ST
+l_start	DI
+	LD SP,#4040
+	LD A,#41
+	LD I,A
+	IM 2
+	CALL l_START2	;нач.уст
+	CALL l_BACK
+	CALL l_MLOOP	;---начало
+	; CALL XEARTH  ;--удали
+	; CALL COPYAT  ;
+	; LD A,0       ;
+	; LD (T_INTR),A;
+	; LD A,4       ;
+	; LD (TARoff),A;
+	; LD (NRECR),A ;
+	; LD (AQU),A   ;
+	; CALL RECRUT  ;
+	; CALL MLOOP
+
+l_MUST	DEFW #202,#3412
+l_MU_MS	LD BC,#FADF	;a mouse button: wait until released, NC
+	IN A,(C)
+	CPL
+	AND 3
+	SCF
+	RET Z
+l_MU_M2	IN A,(C)
+	CPL
+	AND 3
+	JR NZ,l_MU_M2
+	RET
+l_MU_ENT	CALL l_MU_MS
+	RET NC
+	LD A,#BF	;ждать ENTER
+	IN A,(#FE)
+	RRA
+	JR C,l_MU_ENT
+	RET NC
+l_NO_3D	RRCA	;откл 3D боя
+	RRCA
+	RRCA
+	LD HL,l_xHAC2
+	RET C
+	INC (HL)
+	RET
+	;Main procedures
+	INCLUDE "xmain.asm"

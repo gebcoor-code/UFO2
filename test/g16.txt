@@ -1,0 +1,36 @@
+wait 500
+click
+wait 300
+at 288 22
+wait 5
+click
+wait 300
+at 200 120
+wait 8
+click
+wait 60
+shot R0
+at 319 100
+wait 60
+shot R1
+at 150 100
+wait 30
+shot R2
+at 0 100
+wait 60
+shot R3
+at 150 100
+wait 30
+shot R4
+at 150 0
+wait 40
+shot R5
+at 150 100
+wait 30
+shot R6
+at 150 199
+wait 40
+shot R7
+at 150 100
+wait 30
+shot R8

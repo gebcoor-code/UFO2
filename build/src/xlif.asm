@@ -1,0 +1,722 @@
+l_L_OFF	;Сброс битов видимости
+	LD HL,#E000
+	LD BC,#2000
+l_L_OF1	LD A,(HL)
+	CP 3
+	JR C,l_L_OF2
+	SET 7,(HL)
+l_L_OF2	INC HL
+	DEC BC
+	LD A,C
+	OR B
+	JR NZ,l_L_OF1
+	LD HL,(l_L_IPOS)
+	BIT 7,H
+	RET NZ
+	XOR A
+	PUSH HL
+	CALL l_L_Off
+	POP HL
+	LD A,1
+	CALL l_L_Off
+	LD HL,#FFFF
+	LD (l_L_IPOS),HL
+	RET
+l_L_Off	CALL l_FLOOR
+	LD C,16
+l_Loo1	LD B,16
+	LD (l_TX),HL
+	PUSH HL
+l_Loo0	CALL l_GSP	;psp
+	EXX
+	RES 7,(HL)
+	EXX
+	LD HL,l_TX
+	INC (HL)
+	DJNZ l_Loo0
+	POP HL
+	INC H
+	DEC C
+	JR NZ,l_Loo1
+	RET
+
+	;-----------------------------------------------
+l_L_Land	CALL l_PT128
+	LD A,(l_L_LAND)	;загр.ландш
+	LD HL,l_L_LL
+	CALL l_WT
+	JP (HL)
+
+	;========Формирование ландшафта================================
+l_L_SPR4	CALL l_L_SPR1	;загр спр истр + НЛО
+	m_M_S 3
+	LD DE,l_DSCR
+	PUSH DE
+	LD HL,l_xUFO+2
+	CALL l_DELPC
+	CALL l_PT128
+	POP HL
+	LD DE,#B800
+	LD BC,#1800
+	LDIR
+	RET
+
+l_L_SPR1	;загр спр истр
+	LD HL,#B000
+	PUSH HL
+	LD DE,l_xATR
+	LD BC,96
+	LDIR
+	PUSH DE
+	POP HL
+	INC DE
+	LD (HL),%10000001	;xATR трупа
+	LD C,31
+	LDIR
+	m_M_S 4
+	POP DE
+	LD HL,l_xSHIP+2
+	CALL l_DELPC
+	JP l_PT128
+
+l_L_L10	CALL l_SET8x2	;кop II
+	LD HL,(7*256)+34	;)
+	CALL l_L_4var
+	JR l_L_SPR1
+
+l_L_L1	CALL l_SET8x2	;корабль I
+	LD HL,(9*256)+28
+	CALL l_L_4var
+	LD HL,#804
+	LD A,16
+	CALL l_L_INTR
+	JR l_L_SPR1
+
+l_L_L6	CALL l_PERgt1
+	CALL l_SET4x4	;Ubase I
+	LD HL,(4*256)+24	;)
+	CALL l_L_4var
+	CALL l_RND
+	AND 3
+	LD HL,l_T_L6
+	CALL l_WT
+	CALL l_L_IN64
+	JR l_L_SPR1
+
+l_L_L7	CALL l_PERgt1
+	CALL l_SET4x4	;Tleth
+	LD HL,(5*256)+40
+	CALL l_L_4var
+	JR l_L_SPR1
+
+l_T_ML0	DEFB 20,1,22,2,47,13,52,15,50,16,51,17,49,18,53,19
+l_L_L0	;подв.мир
+	CALL l_RND
+	AND 7
+	LD HL,l_T_ML0
+	CALL l_WT
+	CALL l_L_1var
+	CALL l_D2FLR
+	CALL l_L_SWAP
+	CALL l_L_DUP
+	CALL l_L_COPY
+	CALL l_L_InUf
+	JP l_L_SPR4
+
+l_L_L2	;город-порт
+	LD HL,(3*256)+23
+	CALL l_RND
+	RRCA
+	LD A,16
+	JR C,l_L_l2
+	LD HL,(10*256)+44
+	LD A,45
+l_L_l2	PUSH AF
+	CALL l_L_1v10
+	CALL l_D2FLR
+	CALL l_L_SWAP
+	CALL l_L_DUP
+	CALL l_L_COPY
+	CALL l_RND
+	AND #30
+	LD L,A
+	CALL l_RND
+	AND #30
+	LD H,A
+	POP AF
+	PUSH AF
+	CALL l_L_INTR
+	POP AF
+	CP 16
+	JR Z,l_L_l20
+	LD BC,#1000	;порт 2
+	LD HL,#F000
+l_L_l21	LD A,(HL)
+	CP 11
+	JR NZ,l_L_l22
+	LD (HL),48
+	JR l_L_l23
+l_L_l22	CP 15
+	JR NZ,l_L_l23
+	LD (HL),50
+l_L_l23	INC HL
+	DEC BC
+	LD A,C
+	OR B
+	JR NZ,l_L_l21
+	JP l_L_SPR1
+l_L_l20	LD HL,(l_L_IPOS)	;порт 1
+	DEC H
+	DEC L
+	PUSH HL
+	LD (l_TX),HL
+	LD B,16
+l_L_l24	LD A,16
+	CALL l_PSP
+	LD HL,l_TX
+	INC (HL)
+	DJNZ l_L_l24
+	POP HL
+	LD (l_TX),HL
+	LD B,16
+l_L_l25	LD A,16
+	CALL l_PSP
+	LD HL,l_TY
+	INC (HL)
+	DJNZ l_L_l25
+	JP l_L_SPR1
+
+l_CHECK3	;[]#3
+	LD HL,l_TAB100+75
+	LD A,(HL)
+	LD DE,14-75
+	ADD HL,DE
+	NEG
+	CP (HL)
+	RET Z
+	CALL NZ,l_MLOOP
+
+l_L_L8	;колония II
+	LD HL,(12*256)+46
+	JR l_L_L498
+
+l_L_L4	;наша база
+	LD HL,(6*256)+33	;)
+l_L_L498	CALL l_L_1v10
+	CALL l_D2FLR
+	CALL l_L_SWAP
+	CALL l_L_COPY
+	JP l_L_SPR1
+
+l_L_L9	;Ubase II
+	LD HL,(11*256)+45
+	JR l_L_L498
+
+l_CHECK7	;[]#7
+	LD HL,(l_TAB100+87)
+	LD B,10
+	PUSH BC
+l_CH7	INC L
+	DEC H
+	XOR A
+	LD DE,(l_TAB100+56)
+	SBC HL,DE
+	POP BC
+	RET Z
+	DJNZ l_CH7
+
+l_L_L3	;остров
+	LD HL,(8*256)+38
+	CALL l_L_1v10
+	LD A,16
+	JR l_l_l35
+
+l_T_L6	DEFW 0,#30,#3000,#3030
+l_L_L5	;Ucolony I
+	CALL l_PERgt1
+	LD HL,(14*256)+48
+	CALL l_L_1var
+	LD A,64
+l_l_l35	PUSH AF
+	CALL l_D2FLR
+	CALL l_L_SWAP
+	CALL l_L_DUP
+	CALL l_L_COPY
+	CALL l_RND
+	AND #30
+	LD L,A
+	CALL l_RND
+	AND #30
+	LD H,A
+	POP AF
+	PUSH AF
+	CALL l_L_INTR
+	POP AF
+	CP 64
+	JP Z,l_L_SPR4
+	JP l_L_SPR1
+
+l_L_SWAP	;cоздать MAP16 и тасовать
+	LD BC,#1000
+	LD HL,l_MAP16
+l_Lsw0	LD (HL),C
+	INC HL
+	INC C
+	DJNZ l_Lsw0
+	LD DE,l_MAP16
+	LD H,D
+	LD B,16
+l_Lsw1	CALL l_RND
+	AND #F
+	LD L,A
+	LD A,(DE)
+	LD C,(HL)
+	LD (HL),A
+	LD A,C
+	LD (DE),A
+	INC DE
+	DJNZ l_Lsw1
+	RET
+
+l_L_DUP	;продублировать 0-4
+	LD H,l_MAP16/256
+	LD D,H
+	CALL l_RND
+	AND 7
+	RET Z
+	LD B,A
+l_Ldup1	CALL l_RND
+	AND #F
+	LD L,A
+	CALL l_RND
+	AND #F
+	LD E,A
+	LD A,(HL)
+	LD (DE),A
+	DJNZ l_Ldup1
+	RET
+
+l_L_C16	;копировать кусок 16x16  ;HL-YX, A- No куска
+	LD E,0
+	ADD A,#90
+	LD D,A
+	PUSH DE
+	PUSH HL
+	XOR A
+	CALL l_LCC1
+	POP HL
+	POP DE
+	LD A,#10
+	ADD A,D
+	LD D,A
+	LD A,1
+l_LCC1	CALL l_FLOOR
+	LD C,16
+l_Lcc1	LD B,16
+	LD (l_TX),HL
+	PUSH HL
+l_Lcc0	CALL l_GSP	;psp
+	LD A,(DE)
+	INC DE
+	EXX
+	LD (HL),A
+	EXX
+	LD HL,l_TX
+	INC (HL)
+	DJNZ l_Lcc0
+	POP HL
+	INC H
+	DEC C
+	RET Z
+	JR NZ,l_Lcc1
+
+l_L_COPY	;Kопировать карту 64x64 по массиву MAP16
+l_MAP16	EQU #B100
+	LD DE,l_MAP16
+	LD C,4
+	LD H,0
+l_Lcc3	LD B,4
+	LD L,0
+l_Lcc4	LD A,(DE)
+	INC DE
+	m_PUSH_S
+	CALL l_L_C16
+	m_POP_S
+	LD A,L
+	ADD A,16
+	LD L,A
+	DJNZ l_Lcc4
+	LD A,H
+	ADD A,16
+	LD H,A
+	DEC C
+	JR NZ,l_Lcc3
+	RET
+
+l_L_1var	LD A,L	;H-XM L-XL
+	LD (l_L_MOD),A
+	LD A,H
+	LD HL,l_DSCR
+	CALL l_CREAD
+	LD HL,l_DSCR+2
+	LD DE,#B800
+	CALL l_DELPC
+	LD BC,96
+	LD HL,#B800
+	LD DE,#B000
+	LDIR
+	LD C,96
+	LD DE,l_xCONV
+	LDIR
+	LD DE,#D000
+	LD BC,#1000
+	LDIR
+	LD A,(l_L_MOD)
+	LD HL,l_DSCR
+	CALL l_READ
+	LD HL,l_DSCR+2
+	LD DE,#E000
+	CALL l_DELPC
+	CALL l_SET4x4
+	RET
+
+l_L_1v10	LD A,L	;H-XM L-XL
+	LD (l_L_MOD),A
+	LD A,H
+	LD HL,l_DSCR
+	CALL l_CREAD
+	LD HL,l_DSCR+2
+	LD DE,#B800
+	CALL l_DELPC
+	LD BC,96
+	LD HL,#B800
+	LD DE,#B000
+	LDIR
+	LD C,96
+	LD DE,l_xCONV
+	LDIR
+	LD DE,#B800
+	LD BC,#2800
+	LDIR
+	LD A,(l_L_MOD)
+	LD HL,l_DSCR
+	CALL l_READ
+	LD HL,l_DSCR+2
+	LD DE,#E000
+	CALL l_DELPC
+	CALL l_SET4x4
+	RET
+
+l_L_4var	CALL l_RND	;H-XM, L-XLa..d
+	AND 3
+	ADD A,L
+	LD (l_L_MOD),A
+	LD A,H
+	LD HL,l_DSCR
+	CALL l_CREAD
+	LD HL,l_DSCR+2
+	LD DE,#B800
+	CALL l_DELPC
+	LD BC,96
+	LD HL,#B800
+	LD DE,#B000
+	LDIR
+	LD C,96
+	LD DE,l_xCONV
+	LDIR
+	LD DE,#B800
+	LD BC,#2800
+	LDIR
+	LD A,(l_L_MOD)
+	LD HL,l_DSCR
+	CALL l_READ
+	LD HL,l_DSCR+2
+	LD DE,#E000
+	CALL l_DELPC
+	RET
+
+l_D2FLR	;преобр. ландшафт 128x32 в куски 16x16
+	LD DE,#9000
+	LD HL,#E000
+	CALL l_DCFLR
+	LD DE,#A000
+	LD HL,#F000
+l_DCFLR	PUSH HL
+	CALL l_DCHALF
+	POP HL
+	SET 3,H
+l_DCHALF	LD C,8
+l_DCH0	PUSH HL
+	LD B,16
+l_DCH1	PUSH BC
+	LD BC,16
+	LDIR
+	LD BC,112
+	ADD HL,BC
+	POP BC
+	DJNZ l_DCH1
+	POP HL
+	LD A,16
+	ADD A,L
+	LD L,A
+	DEC C
+	JR NZ,l_DCH0
+	RET
+
+l_L_IN64	LD A,64
+l_L_INTR	;поместить истребитель в поз. HL
+	;спр 64 -> (A)
+	LD (l_L_IPOS),HL
+	PUSH HL
+	PUSH AF
+	LD HL,l_xL0+2
+	CALL l_DExLP
+	LD HL,l_DSCR+#1000
+	LD BC,768
+	POP DE
+	LD A,64
+l_L_in0	CPIR
+	JR NZ,l_L_in1
+	EX AF,AF'
+	DEC HL
+	LD (HL),D
+	INC HL
+	EX AF,AF'
+l_L_in1	JP PE,l_L_in0
+	LD A,(l_T_INTR)
+	POP HL
+	JP l_L_C16
+
+l_DExLP	m_M_S 3	;декомпр и расшифр карту с HL
+	LD DE,l_DSCR
+	PUSH DE
+	CALL l_DELPC
+	CALL l_MEM7
+	CALL l_OFFS
+	POP HL
+	LD DE,l_SCR
+	LD BC,#1000
+	PUSH BC
+	PUSH DE
+	PUSH HL
+	PUSH DE
+	LDIR
+	POP HL
+	POP DE
+	CALL l_DCFLR
+	POP DE
+	POP BC
+	LD HL,l_DSCR+#1000
+	PUSH HL
+	PUSH DE
+	LDIR
+	POP HL
+	POP DE
+	CALL l_DCFLR
+	JP l_PT128
+
+l_CREAD	;загр.+уст.цвет+пров.защиты
+	PUSH AF
+	EXX
+	LD HL,l_C_ONOF
+	BIT 0,(HL)
+	JR NZ,l_CREA1
+	LD HL,l_C_tab-1
+	CALL l_BT
+	JR l_CREA2
+l_CREA1	LD A,#38
+l_CREA2	LD (l_COLOR),A
+	EXX
+	POP AF
+	CALL l_READ
+	CALL l_TR_SEC	; []
+	CALL l_PT128
+	JP l_CHECK7
+
+l_T_P0	DEFW #0000,#0010,#0020,#0030	;поз.истр
+	DEFW #1030,#2030,#3030,#3020
+	DEFW #3010,#3000,#2000,#1000
+	DEFW #0000,#0010,#0020,#0030
+	DEFW #1030,#2030,#3030,#3020
+	DEFW #3010
+l_T_u0	DEFB 8,4,3,9,10,5,6,0,2	;нач.карт НЛО
+l_L_InUf	CALL l_RND	;пост. Истр+UFO
+	AND #F
+	CP 12
+	JR NC,l_L_InUf
+	PUSH AF
+	LD HL,l_T_P0
+	CALL l_WT
+	CALL l_L_IN64
+l_L_u5	CALL l_RND
+	AND 7
+	JR Z,l_L_u5
+	LD E,A
+	POP AF
+	INC A
+	INC A
+	ADD A,E
+	LD HL,l_T_P0
+	CALL l_WT
+	PUSH HL
+	LD A,(l_L_UFO)
+	LD HL,l_xL0+2
+	CP 7
+	JR C,l_L_u0
+	LD HL,l_xL1+2
+l_L_u0	CALL l_DExLP
+	LD A,(l_L_UFO)
+	LD HL,l_T_u0
+	CALL l_BT
+	CP 7
+	JR C,l_L_U1
+	POP HL	;мал
+	JP l_L_C16
+l_L_U1	CP 3
+	JR C,l_L_UB
+	CP 6
+	JR NC,l_L_UB
+l_L_UM	POP HL	;мал x2
+	EX AF,AF'
+	LD A,H
+	CP #30
+	JR C,l_L_U2
+	LD H,#20
+l_L_U2	EX AF,AF'
+	PUSH AF
+	PUSH HL
+	CALL l_L_C16
+	POP HL
+	LD A,#10
+	ADD A,H
+	LD H,A
+	POP AF
+	ADD A,8
+	JP l_L_C16
+l_L_UB	POP HL
+	PUSH AF
+	EX AF,AF'
+	LD A,L
+	CP #30
+	JR C,l_L_U3
+	LD L,#20
+l_L_U3	PUSH HL
+	EX AF,AF'
+	CALL l_L_UM+1
+	POP HL
+	LD A,16
+	ADD A,L
+	LD L,A
+	POP AF
+	INC A
+	JR l_L_UM+1
+
+l_L_LL	DEFW l_L_L0,l_L_L1,l_L_L2,l_L_L3,l_L_L4,l_L_L5
+	DEFW l_L_L6,l_L_L7,l_L_L8,l_L_L9,l_L_L10
+
+	DEFM "++ This program protected by copyright law of Russia ++"
+
+	;===================== Победа-Demo ===========
+
+l_POBEDA	CALL l_PT128
+	LD A,21
+	LD HL,l_SCR+9800
+	CALL l_READ
+	LD HL,l_SCR+9802
+	LD DE,l_SCR
+	PUSH DE
+	CALL l_DELPC
+	LD HL,(#F002)
+	LD DE,l_DSCR
+	LD BC,6144
+	PUSH DE
+	PUSH BC
+	LDIR
+	CALL l_OFFS
+	POP BC
+	POP HL
+	POP DE
+	LDIR
+	LD BC,736
+	PUSH DE
+	POP HL
+	INC DE
+	LD (HL),#70
+	LDIR
+	LD (HL),0
+	LDI
+	LD BC,30
+	LD (HL),#68
+	LDIR
+	LD (HL),0
+	CALL l_PT128
+	CALL #C000
+	XOR A
+	LD (l_SX),A
+	CALL l_STS
+	LD HL,(#F004)
+	LD (l_TXT),HL
+
+l_P_LOOP	CALL l_E_I
+	CALL l_PT128
+	CALL #C006
+	LD HL,l_SX
+	INC (HL)
+	LD A,(HL)
+	AND 7
+	LD (HL),A
+	JR NZ,l_P_L1
+	CALL l_PT128
+	LD HL,(l_TXT)
+	INC HL
+	LD (l_TXT),HL
+	LD A,(HL)
+	CP 126
+	JR C,l_P_L2
+	LD HL,(#F004)
+	LD (l_TXT),HL
+	LD A,(HL)
+l_P_L2	EX AF,AF'
+	CALL l_MEM7
+	EX AF,AF'
+	LD DE,#171F
+	LD BC,l_FONT
+	LD L,A
+	LD A,1
+	CALL l_SYMBOL
+l_P_L1	CALL l_MEM7
+	CALL l_P_SCRL
+	LD BC,#BFFE
+	IN A,(C)
+	AND 1
+	JR NZ,l_P_LOOP
+	LD BC,65533
+	LD A,7
+	OUT (C),A
+	LD BC,49149
+	LD A,#FF
+	OUT (C),A
+	RET
+
+l_P_SCRL	LD HL,(l_SCR+#1000)+255
+	LD B,8
+l_P_SC0	m_push_S
+	LD B,31
+l_P_SC1	RL (HL)
+	DEC L
+	DJNZ l_P_SC1
+	m_pop_S
+	INC H
+	DJNZ l_P_SC0
+	RET
+
+l_PERgt1	LD HL,l_PERIOD	;цель соотв? []
+	LD A,(HL)
+	CP 2
+	RET NC
+	JP l_P_LOOP
+
+	DEFM "Do You like me ?"
+
+l_C_tab	DEFB #28,#38,#71,#69,#79,#38,#30,#60
+	DEFB #78,#70,#78,#71,#30,#28,#68,#70,#78,#60,#71

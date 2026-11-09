@@ -1,0 +1,33 @@
+wait 500
+click
+wait 300
+goto 205 45
+wait 5
+log
+click
+wait 250
+goto 120 131
+wait 20
+log
+click
+wait 200
+goto 205 45
+wait 5
+log
+click
+wait 200
+goto 120 131
+wait 20
+log
+click
+wait 200
+goto 205 45
+wait 5
+log
+click
+wait 200
+goto 120 131
+wait 20
+log
+click
+wait 150

@@ -1,0 +1,2424 @@
+l_PSQQ	DEFB #FF,#80,#80,#80,#80,#80,#95,#AA
+	DEFB #FF,0,0,0,0,0,#55,#AA
+	DEFB #FF,0,1,2,1,2,#55,#AA
+
+l_PSS	DEFB 0,1,1,2
+l_PSS2	DEFB 0,2
+
+l_CRC1	DEFW 0	;[] - crc1
+
+l_NEWHER	LD (l_HER_N),A	;нов.герой
+	CALL l_GET_AD
+	LD (l_HER_AD),HL
+	RET
+
+l_GET_AD	RLCA	;Взять описатель(MAN+A*32) ->HL
+	RLCA
+	RLCA
+	LD L,A
+	LD H,0
+	ADD HL,HL
+	ADD HL,HL
+	LD A,l_MAN/256
+	ADD A,H
+	LD H,A
+	RET
+
+l_GET_IX	CALL l_GET_AD	;То же для IX
+	PUSH HL
+	POP IX
+	RET
+
+l_GET_DE	LD HL,(l_HER_AD)	;коорд ->DE
+l_GT_DE_	LD E,(HL)
+	INC HL
+	LD D,(HL)
+	INC HL
+	RET
+
+	;0-x,1-y,2-ЭТАЖ,3-направление,4-Paca,5-наш/не наш,6-VISION,7-N спрайта внизу
+	;8-имя,9-ранг,10-защита,11-TU,12-EN,13-HEALTH,14-WOUND,15-MORAL,16-Меткость
+	;(17-20)-ОРУЖИЕ 1-4, (21-24)-патроны 1-4
+	;25-текущ.оружие, 26-FREEZE
+	;27-TUold, 28-ENold, 29-HEALTHold, 30-peзерв, 31-MORALold
+
+l_COMBAT	;****************************** Бой **
+	; 0-Победа,1-Поражение/Эвакуация
+	EI
+	LD SP,#3D00	;чтобы не было переполн
+	XOR A
+	LD (l_PVIS),A
+	LD (l_FIRTYP),A
+	LD (l_WAREND),A
+	DEC A
+	LD HL,#151E
+	LD (l_BX),HL
+	CALL l_BNEW
+	CALL l_PANEL1
+	CALL l_LCOUNT
+	CALL l_INIHER
+	CALL l_isILL
+	CALL l_INILOK
+	CALL l_INIALI
+	CALL l_L_ON	;hack
+	CALL l_HER1st
+	CALL l_CENTR
+	CALL l_ALLSPF
+	CALL LAY_NAMP
+	CALL l_PANELM
+	CALL l_CLRSET
+	CALL l_OUTDSC
+	;  CALL VZLOM
+	;  CALL ENDBAT
+	CALL l_C_SAVE	;----
+l_COMB_	CALL l_BOUT
+	CALL l_P_IMG
+	CALL l_PNTR
+	CALL l_CURHER
+	CALL l_OUTDSC
+	CALL l_CURHER
+	CALL l_POFF
+	CALL l_ROTATE
+	;;;;; CALL EDITOR    ;
+	CALL l_BMOV
+	JR C,l_COMB_1
+	CALL l_LOOKER
+	CALL l_FIRER
+	CALL l_LOOPER
+l_COMB_1	CALL l_GETZON
+	CALL l_ACTION
+	CALL l_LOOPER
+
+l_PANEL1	;Неизм.изобр.панели
+	CALL l_OFFD
+	CALL l_STD
+	LD BC,l_PSQQ
+	LD HL,l_PSS
+	PUSH HL
+	LD DE,1
+	LD A,4
+	CALL l_PRINT
+	POP HL
+	LD E,25
+	LD A,4
+	CALL l_PRINT
+	LD DE,#110D
+	LD HL,l_PSS2
+	LD A,2
+	CALL l_PRINT
+	LD L,0
+	LD A,1
+	LD DE,#1701
+	CALL l_SYMBOL
+	LD L,1
+	LD A,26
+	CALL l_SYMBOL
+	LD L,2
+	LD A,1
+	CALL l_SYMBOL
+	m_M_S 3+#80
+	LD HL,0
+	LD BC,#2018
+	LD A,#68
+	CALL l_ATRBAR
+	INC H
+	INC L
+	LD BC,#1C10
+	LD A,(l_COLOR)
+	CALL l_ATRBAR
+	LD HL,29
+	LD BC,#318
+	LD A,#72
+	CALL l_ATRBAR
+	LD DE,l_xPARAM
+	LD B,6
+l_PN0	PUSH BC
+	LD BC,#302
+	CALL l_PUTSIM
+	INC H
+	INC H
+	LD C,1
+	LD A,#60
+	CALL l_ATRBAR
+	INC H
+	EX DE,HL
+	LD BC,48
+	ADD HL,BC
+	EX DE,HL
+	POP BC
+	DJNZ l_PN0
+	LD BC,#306
+	LD A,#78
+	CALL l_ATRBAR
+	LD DE,l_xKEY
+	LD BC,#C06
+	LD HL,#1101
+	CALL l_PUTSIM
+	;очистка кнопок
+	LD DE,(23*32)+l_xLABEL
+	LD HL,#110F
+	LD B,7
+l_PN4	PUSH BC
+	LD BC,#202
+	CALL l_PUTSIM
+	POP BC
+	INC L
+	INC L
+	DJNZ l_PN4
+	; LD HL,141*256+125 ;цифры на кнопках
+	; LD DE,FONT+8
+	; CHN$ XOR_
+	; LD B,7
+	;PN4A PUSH BC
+	; LD BC,#108
+	; CALL PUTSPR
+	; LD A,16
+	; ADD A,L
+	; LD L,A
+	; LD A,8
+	; ADD A,E
+	; LD E,A
+	; LD A,0
+	; ADC A,D
+	; LD D,A
+	; POP BC
+	; DJNZ PN4A
+	; CALL STD
+	LD DE,l_xWBUTT
+	LD HL,#130D
+	LD B,4
+l_PN5	PUSH BC
+	LD BC,#403
+	CALL l_PUTSIM
+	POP BC
+	INC L
+	INC L
+	INC L
+	INC L
+	DJNZ l_PN5
+	LD HL,#160D
+	LD BC,#1001
+	LD A,#70
+	CALL l_ATRBAR
+	LD A,#FF
+	CALL l_SIMBAR
+	LD HL,#7878
+	LD (((#12*32)+#D)+l_DATR),HL
+	CALL l_MEM7
+	CALL l_COPYAT
+	JP l_PT128
+
+l_SPLDIR	m_M_S 3
+	LD DE,l_DSCR	;перенесение спрайта
+	PUSH DE
+	LD BC,96
+	LDIR
+	POP DE
+	JP l_MEM7
+
+
+l_INIHER	;иниц.героев
+	LD HL,l_MAN	;парам.людей
+	LD DE,l_MAN+1
+	LD BC,#3FF
+	LD (HL),0
+	LDIR
+	LD B,10
+	LD HL,l_AQNAVT
+	LD DE,l_MAN+8
+l_INH0	PUSH BC
+	LD BC,3
+	LDIR
+	PUSH HL
+	LD C,10
+	LDIR
+	INC HL
+	INC HL
+	INC HL
+	EX (SP),HL
+	LD A,E
+	ADD A,6
+	LD E,A
+	LD C,5
+	LDIR
+	LD A,E
+	ADD A,8
+	LD E,A
+	POP HL
+	POP BC
+	DJNZ l_INH0
+	LD HL,l_MAN+17	;оружие
+	LD C,10
+l_INH2	LD B,4
+l_INH3	LD A,(HL)
+	INC HL
+	PUSH HL
+	CP 15
+	JR C,l_INH41
+	XOR A
+	JR l_INH4
+l_INH41	EXX
+	LD HL,l_WEAPON+6
+	RLCA
+	CALL l_DD
+	EXX
+l_INH4	INC HL
+	INC HL
+	INC HL
+	LD (HL),A
+	POP HL
+	DJNZ l_INH3
+	LD DE,28
+	ADD HL,DE
+	DEC C
+	JR NZ,l_INH2
+	;поз.людей
+	LD IX,(32*9)+l_MAN
+	XOR A
+	LD H,A
+	LD L,A
+	LD (l_TX),HL
+	CALL l_FLOOR
+	LD B,10
+l_INL0	LD A,(IX+14)	;болен?
+	OR A
+	JR Z,l_INL0_
+	LD (IX+8),0
+l_INL0_	LD A,(IX+8)	;cуществует?
+	OR A
+	JR Z,l_INL1
+l_INL2	CALL l_NEXTSP
+	AND #7F
+	CP 2
+	JR NZ,l_INL2
+	LD (IX+7),2
+	LD HL,(l_TX)
+	LD (IX),L
+	LD (IX+1),H
+	LD A,(l_FLR)
+	LD (IX+2),A
+	LD (IX+3),6
+	LD A,#5F
+	ADD A,B
+	CALL l_PSP
+l_INL1	PUSH DE
+	LD DE,-32
+	ADD IX,DE
+	POP DE
+	DJNZ l_INL0
+
+	RET
+
+l_HERLIV	LD A,(IX+8)	;IX-жив? Z-нет
+	OR A
+	RET Z
+	LD A,(IX+13)
+	OR A
+	RET Z
+	CP (IX+26)
+	RET NC
+	XOR A
+	RET
+
+l_HER1st	LD IX,l_MAN	;взять первого
+	LD B,0
+l_HS0	CALL l_HERLIV
+	JR Z,l_HS1
+	LD A,(IX+5)
+	OR (IX+4)
+	JR NZ,l_HS1
+	LD A,B
+	JP l_NEWHER
+l_HS1	LD DE,32
+	ADD IX,DE
+	INC B
+	LD A,B
+	CP 10
+	JR C,l_HS0
+	XOR A
+	JP l_BATRET
+
+l_NEXTSP	EXX
+	LD HL,(l_TX)	;взять след.поле
+	INC L
+	LD A,(l_XMAX)
+	CP L
+	JR NC,l_Nxs
+	LD L,0
+	INC H
+	LD A,(l_YMAX)
+	CP H
+	JR NC,l_Nxs
+	LD H,0
+	LD A,(l_FLR)
+	XOR 1
+	CALL l_FLOOR
+l_Nxs	LD (l_TX),HL
+	JP l_GSP+1
+
+l_PANELM	;При смене героя(HER_AD-описатель)
+	LD HL,(l_HER_AD)
+	PUSH HL
+	LD HL,l_DSCR+#400
+	LD DE,l_DSCR+#1400
+	LD BC,#400
+	LDIR
+	CALL l_STS
+	CALL l_MEM7
+	CALL l_GUNOUT
+	LD HL,#5
+	LD BC,#1401	;имя
+	LD A,#71
+	CALL l_ATRBAR
+	POP HL
+	CALL l_PNAM
+	PUSH HL
+	CALL l_STS
+	LD HL,l_DSCR+6
+	LD DE,l_SCR+6
+	LD B,8
+l_LM77	m_PUSH_S
+	LD BC,19
+	LDIR
+	m_POP_S
+	INC H
+	INC D
+	DJNZ l_LM77
+	POP HL
+	INC HL
+	LD E,(HL)	;звание
+	INC HL
+	PUSH HL
+	LD L,72
+	CALL l_MULB
+	LD HL,l_xSIGN
+	ADD HL,DE
+	CALL l_SPLDIR
+	LD HL,#121D
+	LD BC,#303
+	CALL l_PUTSIM
+	POP HL
+	LD E,(HL)	;защита
+	INC HL
+	PUSH HL
+	LD L,72
+	CALL l_MULB
+	LD HL,l_xSIGN+576
+	ADD HL,DE
+	CALL l_SPLDIR
+	LD HL,#151D
+	LD BC,#303
+	CALL l_PUTSIM
+	LD A,#71
+	CALL l_ATRBAR
+	LD B,6
+	LD HL,#21D	;парам
+l_LM2	LD (l_SX),HL
+	EX (SP),HL
+	LD A,(HL)
+	INC HL
+	EX (SP),HL
+	CALL l_WB
+	INC H
+	INC H
+	INC H
+	DJNZ l_LM2
+	POP HL
+	EXX	;оружие
+	LD HL,(256*156)+13
+	LD B,4
+l_LM3	PUSH BC
+	EXX
+	LD A,(HL)
+	INC HL
+	EXX
+	PUSH HL
+	CP 15
+	LD HL,l_xWBUTT+16
+	JR NC,l_LM4
+	LD E,A
+	LD L,64
+	CALL l_MULB
+	LD HL,l_xWEAPO
+	ADD HL,DE
+l_LM4	CALL l_SPLDIR
+	POP HL
+	LD BC,#410
+	CALL l_PUTSCR
+	LD A,4
+	ADD A,L
+	LD L,A
+	POP BC
+	DJNZ l_LM3
+	EXX
+l_PANG_	PUSH HL
+	CALL l_STS	;к-во патронов
+	LD HL,#160D
+	LD BC,#401
+l_LM02	LD (l_SX),HL
+	EX (SP),HL
+	LD A,(HL)
+	INC HL
+	EX (SP),HL
+	OR A
+	JR NZ,l_LM03
+	PUSH BC
+	LD B,3
+	LD A,#FF
+	CALL l_SIMBAR
+	POP BC
+	JR l_LM04
+l_LM03	CALL l_WB
+l_LM04	INC L
+	INC L
+	INC L
+	INC L
+	DJNZ l_LM02
+	m_ATR_S #130D,#1003,#68	;текущ.оружие
+	EX (SP),HL
+	LD A,(HL)
+	AND 3
+	LD (HL),A
+	RLCA
+	RLCA
+	POP HL
+	ADD A,L
+	LD L,A
+	LD B,4
+	LD A,#79
+	CALL l_ATRBAR
+	LD DE,l_DSCR+#400
+	LD HL,l_DSCR+#1400
+	LD BC,#400
+	LDIR
+	m_ATR_S #1304,#602,#68
+	LD A,(l_FIRTYP)	;тип стрельбы
+	OR A
+	JR NZ,l_LM17
+	LD L,7
+l_LM17	LD B,3
+	LD A,#7A
+	CALL l_ATRBAR
+	LD A,14
+	CALL l_HER_BA	;F.Wound>0?
+	OR A
+	LD L,#60
+	JR Z,l_LM18
+	LD L,#78
+l_LM18	LD H,L
+	LD (l_ATR+382),HL
+	JP l_LA_OUT	;вокруг враги?
+
+l_PNAM	PUSH HL	;the name (HL = the man; -> HL + 8) into DSCR, then LAY_NAME
+	CALL l_STD
+	LD HL,#5
+	LD BC,#1401
+	LD A,#FF
+	CALL l_SIMBAR
+	POP HL
+	INC L
+	INC L
+	INC L
+	INC L
+	LD A,(HL)
+	INC L
+	INC L
+	INC L
+	INC L
+	OR A
+	JR Z,l_LM78
+	ADD A,20
+	JR l_LM79
+l_LM78	LD A,(HL)
+	DEC A
+	LD BC,l_NAMES
+	LD (l__words),BC
+l_LM79	PUSH HL
+	LD HL,6
+	LD (l_SX),HL
+	PUSH AF
+	CALL l_NWRDM
+	POP AF
+	CALL LAY_NAME
+	LD HL,l_WORDS
+	LD (l__words),HL
+	POP HL
+	RET
+
+l_PANELG	;вывод К-ва патронов
+	LD A,21
+	CALL l_HER_BA
+	CALL l_MEM7
+	JP l_PANG_
+
+l_BX	DEFB 5
+l_BY	DEFB 7
+l_BXOLD	DEFW 0
+l_BHL	DEFW 0
+l_AHL	DEFW 0
+l_BIBU	DS 9
+l_BZON	DEFB 0
+l_BCAP	DEFB 0
+l_BVIS	DEFB 0	;0-GR/1-TXT
+l_BIN	DEFB #55,#81,1,#81,1,#81,1,#FF
+
+l_BOFF	;выкл.курсор
+	LD HL,(l_BHL)
+	LD A,H
+	OR A
+	JR Z,l_BNEW
+	LD DE,l_BIBU
+	LD B,8
+l_BO4	LD A,(DE)
+	LD (HL),A
+	INC DE
+	INC H
+	DJNZ l_BO4
+	LD A,(DE)
+	LD HL,(l_AHL)
+	LD (HL),A
+
+l_BNEW	XOR A	;предуст.курсора
+	LD (l_BHL+1),A
+	LD (l_AHL+1),A
+	DEC A
+	LD (l_BXOLD),A
+	RET
+
+l_BOUT	CALL l_MEM7
+	LD A,#FF
+	LD (l_BVIS),A
+	LD A,(l_BX)
+	OR A
+	JR Z,l_BO1
+	CP (2*l_BCELL)-1
+	JR NC,l_BO1
+	LD A,(l_BY)
+	OR A
+	JR Z,l_BO1
+	CP l_FROWS+1
+	JR NC,l_BO1
+	CALL l_BOFF
+	LD HL,#8080
+	LD (l_BXOLD),HL
+	LD BC,(l_X0)	;gr mrk
+	LD A,(l_SH)
+	OR A
+	JR NZ,l_BO8
+	INC B
+l_BO8	LD A,(l_BX)
+	DEC A
+	SRL A
+	JR NC,l_BO2
+	INC C
+l_BO2	LD E,A
+	ADD A,C
+	LD C,A
+	LD A,B
+	SUB E
+	LD D,A
+	LD A,(l_BY)
+	DEC A
+	LD E,A
+	ADD A,D
+	LD (l_PPY),A
+	LD A,E
+	ADD A,C
+	LD (l_PPX),A
+	XOR A
+	LD (l_BVIS),A
+	JP l_PT128
+l_BO1	CALL l_STS
+	LD A,(LAY_EGA)
+	OR A
+	JP NZ,l_PT128
+	LD DE,(l_BX)
+	LD HL,(l_BXOLD)
+	XOR A
+	SBC HL,DE
+	RET Z
+	PUSH DE
+	PUSH DE
+	CALL l_BOFF
+	POP DE
+	LD (l_BXOLD),DE
+	CALL l_SCOORD
+	LD (l_BHL),HL
+	LD DE,l_BIBU
+	LD BC,l_BIN
+	LD A,8
+l_BO3	EX AF,AF'
+	LD A,(HL)
+	LD (DE),A
+	LD A,(BC)
+	LD (HL),A
+	INC BC
+	INC DE
+	INC H
+	EX AF,AF'
+	DEC A
+	JR NZ,l_BO3
+	POP HL
+	LD A,H
+	RRCA
+	RRCA
+	RRCA
+	LD H,A
+	AND #E0
+	ADD A,L
+	LD L,A
+	LD A,H
+	AND 3
+	ADD A,l_ATR/256
+	LD H,A
+	LD (l_AHL),HL
+	LD A,(HL)
+	LD (l_BIBU+8),A
+	LD (HL),#60
+	LD A,2
+	CALL l_DELAY
+	JP l_PT128
+
+l_BSLOW	DEFB 2
+l_BMOV	;Перемещ: C-FIRE
+	LD HL,l_BSLOW
+	DEC (HL)
+	LD BC,#BFFE	;Enter?
+	IN A,(C)
+	CPL
+	AND %1111
+	JR Z,l_BMOV_
+	LD A,(HL)
+	AND 3
+	OR A
+	RET NZ
+l_BMOV_	LD HL,#101
+	LD (l_MWINX),HL
+	CALL l_CONTR
+	AND #20	;Caps || R.butt?
+	LD E,A
+	LD BC,#FEFE
+	IN A,(C)
+	AND 1
+	OR E
+	LD (l_BCAP),A
+	LD B,4
+l_BVL	PUSH BC
+	LD A,(l_CONTRB)
+	CALL l_MMOV_
+	POP BC
+	DJNZ l_BVL
+	LD HL,(LAY_BXY)
+	LD (l_BX),HL
+	RET
+
+l_ROTATE	;скролл поля
+	LD A,(l_BX)
+	OR A
+	JR NZ,l_RA1
+	LD HL,l_LRT
+	LD C,%10
+	CALL l_MROTAT
+	JR l_RA2
+l_RA1	LD HL,LAY_RXE
+	CP (HL)
+	LD HL,l_RRT
+	LD C,%1
+	CALL NC,l_MROTAT
+l_RA2	LD A,(l_BY)
+	OR A
+	LD HL,l_URT
+	LD C,%1000
+	JR Z,l_MROTAT
+	CP l_PROW+6
+	LD HL,l_DRT
+	LD C,%100
+	CALL NC,l_MROTAT
+	RET
+
+l_MROTAT	;учёт мыши
+	LD A,(l_PMOUSE)
+	OR A
+	JR NZ,l_MRO1
+	LD A,(l_CONTRB)
+	AND C
+	RET Z
+l_MRO1	JP (HL)
+
+
+l_LOOPER	LD HL,l_COMB_	;цикл
+	EX (SP),HL
+	RET
+
+l_GETZON	LD HL,(l_BX)	;НОМЕР ЗОНЫ
+	LD A,#FF
+	LD DE,l_BZON
+	LD (DE),A
+	LD A,L
+	OR A
+	RET Z
+	LD A,H
+	OR A
+	RET Z
+	CP l_FROWS+1
+	JR NC,l_GZ0
+	LD A,L
+	CP (2*l_BCELL)-1
+	RET NC
+	XOR A
+	LD (DE),A
+	RET
+l_GZ0	CP l_PROW+6
+	RET NC
+	LD A,L
+	CP 29
+	RET NC
+	JR l_GZ1
+l_GZ1	LD A,L
+	CP 13
+	JR C,l_GZ2
+	LD A,H
+	CP l_PROW+2
+	LD A,1
+	JR C,l_GZ3
+	INC A
+l_GZ3	LD (DE),A
+	RET
+l_GZ2	DEC L
+	LD A,H
+	SUB l_PROW
+	AND #FE
+	RLCA
+	LD B,A
+	LD E,L
+	LD L,3
+	CALL l_DIVB
+	LD A,E
+	ADD A,B
+	ADD A,3
+	LD (l_BZON),A
+	RET
+
+l_PPX	DEFB #80
+l_PPY	DEFB #80
+l_PIMG	DEFW l_xMARKE
+l_PVIS	DEFB 0
+l_P_AD	DEFW 0
+
+l_P_IMG	;вид 3D курс
+	LD HL,(l_PPX)
+	CALL l_LIFTYP
+	CP #FF
+	JR Z,l_P_IM0
+	LD HL,l_xMARKE+256
+l_P_IMr	LD (l_PIMG),HL
+	RET
+l_P_IM0	LD A,11
+	CALL l_HER_BA
+	LD HL,(l_G_TIME)
+	CP L
+	JR C,l_P_IM1
+	CALL l_CURGUN
+	JR NC,l_P_IM1
+	LD HL,l_xMARKE+384
+	CP 11
+	JR Z,l_P_IMr
+	CP 13
+	JR NC,l_P_IMr
+	CP 5
+	JR C,l_P_IM2
+	CP 7
+	JR C,l_P_IMr
+l_P_IM2	LD HL,l_xMARKE+128
+	JR l_P_IMr
+l_P_IM1	LD HL,l_xMARKE
+	JR l_P_IMr
+
+
+l_POFF	LD HL,l_PVIS	;Гашен. 3D курс.
+	LD A,(HL)
+	OR A
+	RET Z
+	DEC (HL)
+	LD HL,l_DSCR
+	LD DE,(l_P_AD)
+	CALL LAY_FPAD
+	LD BC,#40FD
+l_PF0	LDI
+	LDI
+	LD A,l_BW-2
+	ADD A,E
+	LD E,A
+	JR NC,l_PF1
+	INC D
+l_PF1	DJNZ l_PF0
+	RET
+
+l_flashP	DEFB 0	;мигать,если чел.
+l_PNTR	LD A,(l_BVIS)	;выв.3D курс
+	OR A
+	RET NZ
+	CALL l_CANFIR	;возм. стрельбы
+	CALL l_CANF_V
+	LD HL,(l_PPX)
+	LD (l_TX),HL
+	LD A,(LAY_EGA)
+	OR A
+	JR NZ,l_PNT5
+	CALL l_GSP60
+	JR C,l_PNT5
+	SUB #60
+	CALL l_GET_AD
+	LD A,6
+	ADD A,L
+	LD L,A
+	LD A,(HL)
+	OR A
+	JR NZ,l_PNT5
+	LD HL,l_flashP
+	INC (HL)
+	BIT 2,(HL)
+	RET Z
+l_PNT5	CALL l_INFR
+	RET NC
+	LD A,1
+	LD (l_PVIS),A
+	CALL l_XYHL
+	LD BC,l_BDSC+(4*l_BW)+1
+	ADD HL,BC
+	LD (l_P_AD),HL
+	LD DE,l_DSCR
+	LD BC,#40FD
+l_PTN0	LDI
+	LDI
+	LD A,l_BW-2
+	ADD A,L
+	LD L,A
+	JR NC,l_PTN1
+	INC H
+l_PTN1	DJNZ l_PTN0
+	LD A,(l_FLR)
+	OR A
+	JR NZ,l_PNTR_
+	INC A
+	CALL l_FLOOR
+	LD HL,(l_PIMG)
+	PUSH HL
+	LD HL,l_xMARKE
+	LD (l_PIMG),HL
+	CALL l_PNTR_
+	XOR A
+	CALL l_FLOOR
+	LD HL,(l_PPX)
+	INC H
+	INC H
+	INC H
+	INC L
+	INC L
+	INC L
+	LD (l_TX),HL
+	CALL l_PXY
+	POP HL
+	LD (l_PIMG),HL
+
+l_PNTR_	CALL l_NORM_V
+	LD HL,(l_PPX)
+	LD (l_TX),HL
+	CALL l_INFR
+	RET NC
+	m_M_S 3
+	CALL l_XYHL
+	LD BC,l_BDSC+(4*l_BW)+1
+	ADD HL,BC
+	LD (l_TXT),HL
+	LD DE,(l_PIMG)
+	LD B,#20
+	PUSH HL
+	CALL l_BSP
+	LD HL,l_TY
+	INC (HL)
+	POP HL
+	LD A,L
+	SUB 16
+	LD L,A
+	CALL l_PT128
+	JP l_PNE_
+
+l_INFR	LD HL,(l_X0)
+	LD A,(l_TX)
+	SUB L
+	LD L,A
+	LD A,(l_TY)
+	SUB H
+	LD H,A
+	ADD A,L
+	LD E,A
+	CP (2*l_BROWS)-1
+	RET NC
+	LD A,(l_SH)
+	OR A
+	LD A,L
+	JR NZ,l_IF2
+	INC A
+l_IF2	SUB H
+	LD D,A
+	CP (2*l_BCELL)-1
+	RET
+
+l_XYHL	JP LAY_XYHL
+
+l_RELAX	CALL l_INFR	;вывод изобр. перед 3D спр.
+	RET NC
+	CALL l_XYHL
+	LD DE,l_BDSC+(4*l_BW)+1
+	ADD HL,DE
+	LD (l_TXT),HL
+	CALL l_ASP
+	CALL l_MSP
+	LD HL,l_TY
+	INC (HL)
+	JP l_PNE_
+
+l_PXYF	LD A,(l_FLR)	;в 2 этажа
+	OR A
+	JR NZ,l_PXY
+	INC A
+	CALL l_FLOOR
+	LD HL,(l_TX)
+	PUSH HL
+	DEC H
+	DEC H
+	DEC H
+	DEC L
+	DEC L
+	DEC L
+	LD (l_TX),HL
+	CALL l_PXY
+	XOR A
+	CALL l_FLOOR
+	POP HL
+	LD (l_TX),HL
+
+l_PXY	CALL l_INFR	;выв. 3D спр.(TX,TY)
+	RET NC
+	CALL l_XYHL
+	LD DE,l_BDSC+(4*l_BW)+1
+	ADD HL,DE
+	LD (l_TXT),HL
+	LD A,(l_TX)
+	SUB 4
+	LD (l_TX),A
+	LD A,(l_TY)
+	SUB 3
+	LD (l_TY),A
+	LD HL,112
+	LD BC,#404
+l_PX1	PUSH HL
+	CALL l_ASP
+	ADD HL,DE
+	EX DE,HL
+	LD HL,(l_TXT)
+	CALL l_RSPB
+	LD HL,l_TX
+	INC (HL)
+	INC HL
+	DEC (HL)
+	CALL l_ASP
+	POP HL
+	PUSH HL
+	ADD HL,DE
+	EX DE,HL
+	LD HL,(l_TXT)
+	INC HL
+	CALL l_LSPB
+	LD HL,l_TY
+	INC (HL)
+	INC B
+	INC B
+	INC B
+	INC B
+	CALL l_ASP
+	POP HL
+	LD A,L
+	SUB 16
+	LD L,A
+	PUSH HL
+	ADD HL,DE
+	EX DE,HL
+	LD HL,(l_TXT)
+l_PNE	CALL l_BSP
+	LD HL,l_TY
+	INC (HL)
+	POP HL
+	INC B
+	INC B
+	INC B
+	INC B
+	LD A,L
+	SUB 16
+	LD L,A
+	DEC C
+	JR NZ,l_PX1
+
+l_PNE_	LD B,28
+l_PX2	LD HL,(l_TXT)
+	LD DE,4*l_BW
+	ADD HL,DE
+	LD (l_TXT),HL
+	CALL l_ASP
+	CALL l_RSPB
+	LD HL,l_TX
+	INC (HL)
+	INC HL
+	DEC (HL)
+	LD HL,(l_TXT)
+	INC HL
+	CALL l_ASP
+	CALL l_LSPB
+	LD HL,l_TY
+	INC (HL)
+	DEC B
+	DEC B
+	DEC B
+	DEC B
+	RET Z
+	LD HL,(l_TXT)
+	LD DE,4*l_BW
+	ADD HL,DE
+	LD (l_TXT),HL
+	CALL l_ASP
+	CALL l_BSP
+	LD HL,l_TY
+	INC (HL)
+	DEC B
+	DEC B
+	DEC B
+	DEC B
+	RET Z
+	JR l_PX2
+
+
+l_CENTR	CALL l_GET_DE
+l_CENTR_	LD A,(HL)
+	CALL l_FLOOR
+l_CENTRg	LD A,D
+	SUB 4
+	LD D,A
+	LD A,E
+	SUB 24	;15
+	LD E,A
+	LD (l_X0),DE
+	RET
+
+l_C_MRK	DEFB #70,#07,#40,#01,#40,#01
+	DEFB #40,#01,#40,#01,#70,#07
+
+l_flashC	DEFB #FF
+l_CURHER	LD A,(LAY_EGA)
+	OR A
+	RET NZ
+	;указат.тек.героя
+	LD HL,l_flashC
+	INC (HL)
+	BIT 1,(HL)
+	RET NZ
+	CALL l_GET_DE
+	LD A,(l_FLR)
+	CP (HL)
+	RET NZ
+	LD (l_TX),DE
+	CALL l_INFR
+	RET NC
+	CALL l_XYHL
+	LD BC,l_BDSC+(6*l_BW)+1
+	ADD HL,BC
+	LD DE,l_C_MRK
+	CALL l_CMR_
+	LD BC,22*l_BW
+	ADD HL,BC
+	LD DE,l_C_MRK+6
+l_CMR_	LD BC,#203
+	CALL LAY_FDC
+l_CMR1	PUSH BC
+l_CMR0	LD A,(DE)
+	XOR (HL)
+	LD (HL),A
+	INC HL
+	INC DE
+	DJNZ l_CMR0
+	LD BC,l_BW-2
+	ADD HL,BC
+	POP BC
+	DEC C
+	JR NZ,l_CMR1
+	RET
+
+l_XW	DEFB 0	;угол окна трасс.
+l_YW	DEFB 0
+l_WSTART	DEFW 0	;нач
+l_WSTOP	DEFW 0	;кон
+l_TSTART	DEFW 0
+l_WSTEP	DEFB 0	;N итер
+
+l_XY2TRC	;преобр.коорд
+	LD DE,(l_XW)
+	LD A,H
+	SUB D
+	LD H,A
+	LD A,L
+	SUB E
+	RLA
+	RLA
+	RLA
+	SRL H
+	RRA
+	SRL H
+	RRA
+	SRL H
+	RRA
+	LD L,A
+	LD DE,l_DSCR
+	ADD HL,DE
+	RET
+
+l_TRACE1	;волновой трассировщик (oт DE до HL)
+	;253-X,254-O,0-start,255/<250>-end
+	LD (l_WSTART),DE
+	LD (l_WSTOP),HL
+	LD A,L	;опр. угла поля тр.
+	ADD A,30
+	SUB E
+	CP 60
+	JR NC,l_CWBD1
+	SRL A
+	SUB 31
+	ADD A,E
+	LD L,A
+	LD A,H	;опр. угла поля тр.
+	ADD A,30
+	SUB D
+	CP 60
+l_CWBD1	JP NC,l_CWBD
+	SRL A
+	SUB 31
+	ADD A,D
+	LD H,A
+	LD (l_XW),HL
+	LD HL,l_DSCR	;очст
+	LD DE,l_DSCR+1
+	LD BC,#3FF
+	LD (HL),253
+	LDIR
+	LD HL,l_DSCR+33	;cост.карты
+	LD DE,(l_XW)
+	INC E
+	INC D
+	LD C,30
+l_TW1	LD B,30
+	PUSH DE
+l_TW2	PUSH HL
+	LD (l_TX),DE
+	CALL l_GSP
+	AND #7F
+	;; CP #60
+	;; JR NC,TW5
+	LD L,A
+	LD H,l_xATR/256
+	LD A,254
+	BIT 5,(HL)
+	JR NZ,l_TW4
+	DEC A
+	;; JR TW4
+	;TW5 SUB #60
+	;; CALL GET_IX
+	;; CALL HERLIV
+	;; LD A,254
+	;; JR Z,TW4
+	;; DEC A
+l_TW4	POP HL
+	LD (HL),A
+	INC HL
+	INC E
+	DJNZ l_TW2
+	POP DE
+	INC D
+	INC HL
+	INC HL
+	DEC C
+	JR NZ,l_TW1
+	LD HL,(l_WSTOP)
+	CALL l_XY2TRC
+	XOR A
+	LD (HL),A
+	LD (l_WSTEP),A
+	LD HL,(l_WSTART)
+	CALL l_XY2TRC
+	LD (l_TSTART),HL
+	LD (HL),255
+	;волна
+	LD D,0
+l_CW0	LD E,28
+	LD HL,l_DSCR+66
+l_CW1	LD BC,28
+l_CW2	;CALL HH
+	LD A,D
+	CPIR
+	JR NZ,l_CW4
+	PUSH AF
+	PUSH HL
+	PUSH BC
+	CALL l_CW254
+	DEC HL
+	DEC HL
+	CALL l_CW254
+	LD BC,-31
+	ADD HL,BC
+	CALL l_CW254
+	LD BC,64
+	ADD HL,BC
+	CALL l_CW254
+	POP BC
+	POP HL
+	POP AF
+l_CW4	JP PE,l_CW2
+	LD BC,4
+	ADD HL,BC
+	DEC E
+	JR NZ,l_CW1
+	INC D
+	LD A,64	;К-во итер
+	CP D
+	JR NC,l_CW0
+l_CWBD	SCF	;BAD-C
+	RET
+
+l_CW254	LD A,(HL)	;Cлед.волна
+	CP 254
+	JR Z,l_CW254_
+	RET C
+	POP HL	;OK-NC
+	POP HL
+	POP HL
+	POP HL
+	LD A,H
+	AND #C0
+	JR Z,$+4
+	LD (HL),250
+	LD A,255
+	OR A
+	RET
+l_CW254_	LD A,D
+	INC A
+	LD (HL),A
+	RET
+
+l_TD0	EQU l_DATR
+l_TRACE2	;нахожд. маршрута
+	LD HL,(l_TSTART)
+	LD DE,l_DATR+765
+	PUSH DE
+l_TR2B	;назад на шаг
+	PUSH DE
+	PUSH HL
+	LD DE,-33
+	ADD HL,DE
+	LD DE,l_TD0
+	LD B,3
+l_RBT1	PUSH BC
+	LD BC,3
+	LDIR
+	LD BC,29
+	ADD HL,BC
+	POP BC
+	DJNZ l_RBT1
+	POP HL
+	LD E,#F0	;E-мин.знач,D-напр
+l_RB7	LD A,(l_TD0+1)
+	CP 253
+	JR Z,l_RB3
+	LD A,(l_TD0+3)
+	CP 253
+	JR Z,l_RB5
+	LD A,(l_TD0+0)
+	CP E
+	JR NC,l_RB5
+	LD E,A
+	LD D,3
+	LD BC,-33
+l_RB5	LD A,(l_TD0+5)
+	CP 253
+	JR Z,l_RB1
+	LD A,(l_TD0+2)
+	CP E
+	JR NC,l_RB3
+	LD E,A
+	LD D,1
+	LD BC,-31
+l_RB3	LD A,(l_TD0+7)
+	CP 253
+	JR Z,l_RB6
+	LD A,(l_TD0+5)
+	CP 253
+	JR Z,l_RB1
+	LD A,(l_TD0+8)
+	CP E
+	JR NC,l_RB1
+	LD E,A
+	LD D,7
+	LD BC,33
+l_RB1	LD A,(l_TD0+3)
+	CP 253
+	JR Z,l_RB6
+	LD A,(l_TD0+6)
+	CP E
+	JR NC,l_RB6
+	LD E,A
+	LD D,5
+	LD BC,31
+l_RB6	LD A,(l_TD0+1)
+	CP E
+	JR NC,l_RB0
+	LD E,A
+	LD D,2
+	LD BC,-32
+l_RB0	LD A,(l_TD0+3)
+	CP E
+	JR NC,l_RB4
+	LD E,A
+	LD D,4
+	LD BC,-1
+l_RB4	LD A,(l_TD0+5)
+	CP E
+	JR NC,l_RB2
+	LD E,A
+	LD D,0
+	LD BC,1
+l_RB2	LD A,(l_TD0+7)
+	CP E
+	JR NC,l_RBN
+	LD E,A
+	LD D,6
+	LD BC,32
+l_RBN	ADD HL,BC
+	LD A,D
+	LD C,E
+	POP DE
+	LD (DE),A
+	DEC DE
+	LD A,C
+	OR A
+	JP NZ,l_TR2B
+	CPL
+	LD (DE),A
+	POP DE
+	RET
+
+l_VBYT	EQU l_DSCR+512
+l_isLOOK	DEFB 0	;1-были изм. из LOOK
+
+	;+X(#85) -X(#95)
+	;+Y(#84) -Y(#94)
+l_LOOKT	DEFW #8584,#9584,#9485,#9495,#9594,#8594,#8495,#8485
+l_LOOKSH	DEFB #24,#25,#2C,#2D,#25,#24,#2D,#2C
+
+l_LOOK	;просмотр
+	CALL l_GET_DE
+	LD A,(HL)
+	PUSH AF
+	CALL l_FLOOR
+	POP AF
+	INC HL
+	OR A
+	LD A,(HL)
+l_LOOK_	JR Z,l_LOOKF	;DE-pos A-dir Z/NZ-floor 2/1
+	PUSH DE
+	PUSH AF
+	XOR A
+	CALL l_FLOOR
+	LD (l_TX),DE
+	CALL l_GSP
+	AND #7F
+	JR NZ,l_LOOKf
+	POP AF
+	PUSH AF
+	CALL l_LOOKF
+l_LOOKf	LD A,1
+	CALL l_FLOOR
+	POP AF
+	POP DE
+l_LOOKF	PUSH AF
+	CALL l_LOOK1
+	POP AF
+	INC A
+	AND 7
+l_LOOK1	PUSH AF
+	LD HL,l_LOOKSH
+	CALL l_BA
+	LD (l_LOMSH),A
+	POP AF
+	LD HL,l_LOOKT
+	CALL l_WT
+	LD A,L
+	LD (l_LOMX),A
+	LD A,H
+	LD (l_LOMY),A
+	;просмотр 1 сект
+	PUSH DE
+	LD HL,l_VBYT
+	LD (HL),1
+	INC HL
+	LD (HL),0
+	LD DE,l_VBYT+2
+	LD BC,110
+	LDIR
+	POP DE
+	LD BC,l_VBYT+1
+	LD HL,l_VTAB+2
+l_LOM1	PUSH BC
+	LD A,(HL)
+	INC HL
+	LD C,(HL)
+	INC HL
+	PUSH HL
+	LD HL,l_VBYT
+	CALL l_BA
+	OR A
+	JR Z,l_LOM2
+	LD A,C
+	AND #F
+	LD L,A
+	LD A,C
+	RLCA
+	RLCA
+	RLCA
+	RLCA
+	AND #F
+	LD H,A
+	LD A,D
+l_LOMY	ADD A,H
+	LD C,A
+	LD A,E
+l_LOMX	ADD A,L
+	LD L,A
+	LD H,C
+	LD (l_TX),HL
+	CALL l_GSP
+	CP #80
+	JR C,l_LOM7
+	LD (l_isLOOK),A
+	AND #7F
+l_LOM7	CP 2
+	JR C,l_LOMSH
+	EXX
+	LD (HL),A
+	CP #60
+	CALL NC,l_LOKMAN
+	LD L,A
+	LD H,l_xATR/256
+	LD A,(HL)
+	EXX
+	RLA
+	JR NC,l_LOM2
+l_LOMSH	INC L
+	LD (l_TX),HL
+	CALL l_GSP
+	CP #80
+	JR C,l_LOM8
+	LD (l_isLOOK),A
+	AND #7F
+l_LOM8	CP 2
+	JR C,l_LOM2_
+	EXX
+	LD (HL),A
+	CP #60
+	CALL NC,l_LOKMAN
+	EXX
+l_LOM2_	POP HL
+	POP BC
+	LD A,1
+	LD (BC),A
+	JR l_LOM4
+l_LOM2	POP HL
+	POP BC
+l_LOM4	INC C
+	LD A,104
+	CP C
+	JR NC,l_LOM1
+	RET
+
+l_LOKMAN	;очистка поля, если персонаж
+	SUB #60
+	CALL l_GET_AD
+	LD A,7
+	CALL l_BA
+	RES 7,(HL)
+	LD A,#60
+	RET
+
+l_NORM_V	LD A,#AE	;вкл.норм.отобр
+	LD (l_Ainv1),A
+	LD (l_Ainv2),A
+	LD (l_Ainv3),A
+	LD (l_Ainv4),A
+	RET
+
+l_HT	DEFW l_DSP0,l_DSP2,l_DSP4,l_DSP6
+l_HERO	PUSH HL	;Выв.героя со сдвигом-A:0-3
+	LD HL,l_HT
+	CALL l_WT
+	LD (l_HE1+1),HL
+	LD (l_HE1+4),HL
+	m_M_S 4+#C0
+	POP HL
+	CALL l_GBU
+	LD B,24
+l_HE1	CALL 15635
+	CALL 1010
+	LD A,l_BW-2
+	ADD A,L
+	LD L,A
+	JR NC,l_HE2
+	INC H
+l_HE2	DJNZ l_HE1
+	JP l_PT128
+
+l_DSP4	LD A,(DE)
+	INC DE
+	RLCA
+	RLCA
+	RLCA
+	RLCA
+	LD C,A
+	AND %1111
+	OR (HL)
+	LD (HL),A
+	LD A,C
+	AND #F0
+	INC HL
+	OR (HL)
+	LD (HL),A
+	DEC HL
+	LD A,(DE)
+	INC DE
+	RRCA
+	RRCA
+	RRCA
+	RRCA
+	LD C,A
+	AND #F
+	XOR (HL)
+	LD (HL),A
+	LD A,C
+	AND #F0
+	INC HL
+	XOR (HL)
+	LD (HL),A
+	RET
+
+l_DSP2	LD A,(DE)
+	INC DE
+	RRCA
+	RRCA
+	LD C,A
+	AND #3F
+	OR (HL)
+	LD (HL),A
+	LD A,C
+	AND #C0
+	INC HL
+	OR (HL)
+	LD (HL),A
+	DEC HL
+	LD A,(DE)
+	INC DE
+	RRCA
+	RRCA
+	LD C,A
+	AND #3F
+	XOR (HL)
+	LD (HL),A
+	LD A,C
+	AND #C0
+	INC HL
+	XOR (HL)
+	LD (HL),A
+	RET
+
+l_DSP6	LD A,(DE)
+	INC DE
+	RLCA
+	RLCA
+	LD C,A
+	AND %11
+	OR (HL)
+	LD (HL),A
+	LD A,C
+	AND #FC
+	INC HL
+	OR (HL)
+	LD (HL),A
+	DEC HL
+	LD A,(DE)
+	INC DE
+	RLCA
+	RLCA
+	LD C,A
+	AND #3
+	XOR (HL)
+	LD (HL),A
+	LD A,C
+	AND #FC
+	INC HL
+	XOR (HL)
+	LD (HL),A
+	RET
+
+l_DSP0	LD A,(DE)
+	INC DE
+	OR (HL)
+	LD (HL),A
+	LD A,(DE)
+	INC DE
+	XOR (HL)
+	LD (HL),A
+	INC HL
+	RET
+
+l_GET_XY	LD L,(IX)	;текущ.коорд
+	LD H,(IX+1)
+	RET
+
+l_NXtXY	DEFW #2C00,#2C25,#0025,#2D25,#2D00,#2D24,#0024,#2C24
+	;+X(#2C) -X(#2D) +Y(#24) -Y(#25)
+l_NEXTXY	LD A,(IX+3)	;след.коорд
+	LD HL,l_NXtXY
+	CALL l_WT
+	LD (l_NEXXY),HL
+	CALL l_GET_XY
+l_NEXXY	DEC L
+	DEC H
+	RET
+
+l_PHASE	DEFB 0
+
+l_HERMOV	LD C,A	;передв. акв. (С-поворот)
+	LD A,(l_PHASE)
+	OR A
+	JR NZ,l_MOV4
+	LD IX,(l_HER_AD)
+	LD A,(IX+3)
+	LD D,A
+	CP C
+	JR Z,l_MOV1
+	SUB C
+	AND 7
+	CP 4
+	LD A,D
+	JR NC,l_MOV2
+	DEC A
+	JR l_MOV3
+l_MOV2	INC A
+l_MOV3	AND 7
+	LD (IX+3),A
+l_MOV6	CALL l_GET_XY
+	LD (l_TX),HL
+	CALL l_PXYF
+	SCF
+	RET
+l_MOV1	CALL l_GET_XY	;чел вых
+	PUSH HL
+	CALL l_NEXTXY
+	CALL l_DOOR
+	LD (IX),L
+	LD (IX+1),H
+	POP HL
+	LD A,(IX+7)
+	AND #7F
+	LD (l_TX),HL
+	CALL l_PSP
+	CALL l_PXYF
+	LD A,4
+	LD (l_PHASE),A
+l_MOV4	CALL l_GET_XY
+	LD (l_TX),HL
+	LD HL,l_PHASE
+	DEC (HL)
+	LD A,(HL)
+	OR A
+	JR NZ,l_MOV7
+	CALL l_GSP
+	LD (IX+7),A
+	LD A,(l_HER_N)
+	ADD A,#60
+	CALL l_PSP
+	CALL l_PXYF
+	XOR A
+	RET
+l_MOV7	CALL l_INFR
+	CCF
+	RET C
+	CALL l_XYHL
+	LD (l_TXT),HL
+	LD A,(l_PHASE)
+	AND 1
+	LD C,(IX+3)
+	ADD A,C
+	ADD A,C
+	CALL l_M96
+	LD A,(IX+4)
+	RLCA
+	LD C,A
+	RLCA
+	ADD A,C
+	ADD A,H
+	LD H,A
+	LD DE,l_xHERO
+	ADD HL,DE
+	EX DE,HL
+	LD A,(IX+3)
+	LD C,A
+	RLCA
+	ADD A,C
+	LD C,A
+	LD A,(l_PHASE)
+	DEC A
+	ADD A,C
+	PUSH AF
+	LD HL,l_xROT
+	CALL l_BA
+	EX AF,AF'
+	POP AF
+	LD HL,l_xDHL
+	CALL l_WT
+	LD BC,l_BDSC+(8*l_BW)+1
+	ADD HL,BC
+	LD BC,(l_TXT)
+	ADD HL,BC
+	EX AF,AF'
+	CALL l_HERO
+	LD A,(IX+3)
+	LD HL,l_xRELT
+	CALL l_WT
+	LD (l_CREL+1),HL
+	CALL l_GET_XY
+l_CREL	CALL #3D13
+	SCF
+	RET
+
+l_xDHL	DEFW -l_BW-1,-2*l_BW-1,-3*l_BW-1,-1,-1,-2,l_BW-1,2*l_BW-1,3*l_BW-1,2*l_BW,4*l_BW,6*l_BW
+	DEFW l_BW,2*l_BW,3*l_BW,0,1,1,-l_BW,-2*l_BW,-3*l_BW,-2*l_BW,-4*l_BW,-6*l_BW
+l_xROT	DEFB 3,2,1,2,0,2,3,2,1,0,0,0,1,2,3,2,0,2,1,2,3,0,0,0
+l_xRELT	DEFW l_XR1,l_XR3A,l_XR2A,l_XR2B,l_XR1A,l_XR3,l_XR2,l_XR1
+
+l_XR1A	INC L
+l_XR1	INC L
+	CALL l_RELA
+	DEC L
+	INC H
+	CALL l_RELA
+	DEC L
+	JR l_RELA
+l_XR2B	INC L
+l_XR2A	INC H
+l_XR2	INC H
+	CALL l_RELA
+	DEC H
+	INC L
+	CALL l_RELA
+	DEC H
+l_RELA	LD (l_TX),HL
+	PUSH HL
+	CALL l_RELAX
+	POP HL
+	RET
+l_XR3A	INC H
+	DEC L
+l_XR3	INC H
+	CALL l_RELA
+	DEC H
+	INC L
+	CALL l_RELA
+	DEC H
+	INC L
+	JR l_RELA
+
+l_GB_AD	DEFW 0
+l_GBU	LD BC,#318
+	CALL LAY_FDC
+l_GBUH	PUSH HL
+	PUSH DE
+	LD (l_GB_AD),HL	;сохр.изобр.при передвиж
+	LD DE,l_DATR+128
+	LD A,24
+l_GBU1	LDI
+	LDI
+	LDI
+	LD BC,l_BW-3
+	ADD HL,BC
+	DEC A
+	JR NZ,l_GBU1
+	POP DE
+	POP HL
+	RET
+
+
+l_DECPAR	LD A,(LAY_TUINF)
+	OR A
+	JR Z,1F
+	XOR A
+	RET
+1	;уменьшить время(D) и энергию(E);C-нехватает
+	; XOR A
+	; RET
+	CALL l_MEM7
+	LD IX,(l_HER_AD)
+	BIT 0,(IX+5)
+	EX AF,AF'
+	LD A,(IX+11)
+	SUB D
+	JR C,l_NOTU
+	LD D,A
+	LD A,(IX+12)
+	SUB E
+	JR C,l_NOEN
+	LD (IX+12),A
+	LD (IX+11),D
+	EX AF,AF'
+	JR NZ,l_DCP2
+	EX AF,AF'
+	LD HL,#51D
+	LD (l_SX),HL
+	CALL l_WB
+	LD A,D
+	LD HL,#21D
+	LD (l_SX),HL
+	CALL l_WB
+l_DCP2	CALL l_PT128
+	XOR A
+	RET
+l_NOTU	EX AF,AF'
+	JR NZ,l_DCP0
+	LD HL,#1D
+	JR l_DCP3
+l_NOEN	EX AF,AF'
+	JR NZ,l_DCP0
+	LD HL,#31D
+l_DCP3	LD B,6
+	LD C,#55
+l_DCPL	PUSH BC
+	LD B,3
+l_DCPP	CALL l_E_I
+	DJNZ l_DCPP
+	LD A,C
+	LD BC,#302
+	CALL l_ATRBAR
+	POP BC
+	LD A,C
+	XOR #27
+	LD C,A
+	DJNZ l_DCPL
+l_DCP0	CALL l_PT128
+	SCF
+	RET
+
+
+l_DOOR	;LD A,1
+	;LD (isMVIS),A
+l_DOOR_	PUSH HL
+	LD (l_TX),HL	;откр дверь
+	CALL l_ATSP
+	AND %11100
+	CP %100
+	JR NZ,l_door2
+	CALL l_GSP60
+	PUSH AF
+l_door3	CALL l_GSP
+	PUSH AF
+	AND #7F
+	LD HL,l_xCONV
+	CALL l_BA
+	LD L,A
+	POP AF
+	AND #80
+	OR L
+	CALL l_PSP
+	CALL l_PXYF
+	;LD A,(isMVIS)
+	;OR A
+	;JR Z,doorN
+	LD A,7
+	CALL l_DELAY
+	CALL l_OUTDSA
+l_doorN	POP AF
+	POP HL
+	PUSH HL
+	PUSH AF
+	LD (l_TX),HL	;откр дверь
+	CALL l_ATSP
+	AND %11100
+	CP %100
+	JR Z,l_door3
+	CALL l_SET_AD	;зап поз дв
+	LD DE,(l_TX)
+	LD (HL),E
+	INC HL
+	LD (HL),D
+	INC HL
+	LD A,(l_FLR)
+	LD (HL),A
+	INC HL
+	CALL l_GSP60
+	LD (HL),A
+	INC HL
+	POP AF
+	LD (HL),A
+l_door2	POP HL
+	RET
+
+	;(C) 1995 MEDNONOGOV
+	;таблица просмотра сектора (45гр.,R=16) (N_PRED,#dYdX)
+l_VTAB	DEFB 0,0	;0
+	DEFB 0,#10
+	DEFB 0,#11
+	DEFB 1,#20
+	DEFB 2,#21
+	DEFB 2,#22
+	DEFB 3,#30
+	DEFB 3,#31
+	DEFB 6,#40
+	DEFB 6,#41
+	DEFB 4,#32
+	DEFB 5,#33
+	DEFB 8,#50
+	DEFB 9,#51
+	DEFB 7,#42
+	DEFB 10,#43
+	DEFB 11,#44
+	DEFB 12,#60
+	DEFB 13,#61
+	DEFB 14,#52
+	DEFB 15,#53
+	DEFB 16,#54
+	DEFB 17,#70
+	DEFB 18,#71
+	DEFB 19,#62
+	DEFB 19,#63
+	DEFB 20,#64
+	DEFB 16,#55
+	DEFB 22,#80
+	DEFB 23,#81
+	DEFB 24,#72
+	DEFB 25,#73
+	DEFB 26,#74
+	DEFB 21,#65
+	DEFB 27,#66
+	DEFB 28,#90	;35
+	DEFB 29,#91
+	DEFB 30,#82
+	DEFB 31,#83
+	DEFB 32,#84
+	DEFB 26,#75
+	DEFB 33,#76
+	DEFB 34,#77
+	DEFB 35,#A0
+	DEFB 35,#A1
+	DEFB 36,#A2
+	DEFB 37,#92
+	DEFB 38,#93
+	DEFB 39,#94
+	DEFB 39,#95
+	DEFB 40,#85
+	DEFB 41,#86
+	DEFB 42,#87
+	DEFB 42,#88
+	DEFB 43,#B0
+	DEFB 44,#B1
+	DEFB 45,#B2
+	DEFB 46,#A3
+	DEFB 47,#A4
+	DEFB 48,#A5
+	DEFB 49,#A6
+	DEFB 50,#96
+	DEFB 51,#97
+	DEFB 52,#98
+	DEFB 53,#99
+	DEFB 54,#C0
+	DEFB 55,#C1
+	DEFB 56,#C2
+	DEFB 57,#B3
+	DEFB 58,#B4
+	DEFB 59,#B5	;70
+	DEFB 60,#B6
+	DEFB 61,#A7
+	DEFB 62,#A8
+	DEFB 63,#A9
+	DEFB 65,#D0
+	DEFB 66,#D1
+	DEFB 67,#D2
+	DEFB 68,#C3
+	DEFB 69,#C4
+	DEFB 70,#C5
+	DEFB 72,#B7
+	DEFB 72,#B8
+	DEFB 73,#B9
+	DEFB 64,#AA
+	DEFB 75,#E0
+	DEFB 76,#E1
+	DEFB 77,#E2
+	DEFB 78,#D3
+	DEFB 79,#D4
+	DEFB 79,#D5
+	DEFB 71,#C6
+	DEFB 71,#C7
+	DEFB 81,#C8
+	DEFB 74,#BA
+	DEFB 85,#F0
+	DEFB 86,#F1
+	DEFB 87,#F2
+	DEFB 77,#E3
+	DEFB 88,#E4
+	DEFB 89,#E5
+	DEFB 80,#D6
+	DEFB 91,#D7
+	DEFB 82,#C9	;103
+
+l_INILOK	LD B,32	;просмотр перед новым ходом
+l_ILL1	PUSH BC
+	LD A,B
+	DEC A
+	CALL l_NEWHER
+	LD IX,(l_HER_AD)
+	CALL l_HERLIV
+	JR Z,l_ILL2
+	CALL l_MANALI
+	JR NZ,l_ILL2
+	CALL l_GET_DE
+	LD A,(HL)
+	CALL l_FLOOR
+	CALL l_LOOKS
+l_ILL2	POP BC
+	DJNZ l_ILL1
+	RET
+
+	;=============================================
+l_cBOOM	DEFB 00,#00	;распространение взрыва (2/20,3/36,4/56,6/120)
+	DEFB 00,#10	;(C)1996 Медноногов В.С.
+	DEFB 00,#01
+	DEFB 00,#F0
+	DEFB 00,#0F
+	DEFB 00,#11
+	DEFB 00,#F1
+	DEFB 00,#FF
+	DEFB 00,#1F
+	DEFB 01,#20
+	DEFB 02,#02
+	DEFB 03,#E0
+	DEFB 04,#0E
+	DEFB 05,#21
+	DEFB 06,#F2
+	DEFB 07,#EF
+	DEFB 08,#1E
+	DEFB 05,#12
+	DEFB 06,#E1
+	DEFB 07,#FE
+	DEFB 08,#2F
+	DEFB 10,#03
+	DEFB 11,#D0
+	DEFB 12,#0D
+	DEFB 09,#30
+	DEFB 10,#F3
+	DEFB 11,#DF
+	DEFB 12,#1D
+	DEFB 09,#31
+	DEFB 11,#D1
+	DEFB 12,#FD	;30
+	DEFB 09,#3F
+	DEFB 10,#13
+	DEFB 06,#E2
+	DEFB 07,#EE
+	DEFB 08,#2E
+	DEFB 05,#22
+	DEFB 22,#C0
+	DEFB 23,#0C
+	DEFB 24,#40
+	DEFB 21,#04
+	DEFB 25,#F4
+	DEFB 14,#E3
+	DEFB 18,#D2
+	DEFB 29,#C1
+	DEFB 26,#CF
+	DEFB 15,#DE
+	DEFB 19,#ED
+	DEFB 30,#FC
+	DEFB 27,#1C
+	DEFB 16,#2D
+	DEFB 20,#3E
+	DEFB 31,#4F
+	DEFB 28,#41
+	DEFB 13,#32
+	DEFB 17,#23
+	DEFB 32,#14
+	DEFB 40,#05
+	DEFB 41,#F5
+	DEFB 42,#E4
+	DEFB 33,#D3	;60
+	DEFB 43,#C2
+	DEFB 44,#B1
+	DEFB 37,#B0
+	DEFB 45,#BF
+	DEFB 46,#CE
+	DEFB 34,#DD
+	DEFB 47,#EC
+	DEFB 48,#FB
+	DEFB 38,#0B
+	DEFB 49,#1B
+	DEFB 50,#2C
+	DEFB 35,#3D
+	DEFB 51,#4E
+	DEFB 52,#5F
+	DEFB 39,#50
+	DEFB 53,#51
+	DEFB 54,#42
+	DEFB 36,#33
+	DEFB 55,#24
+	DEFB 56,#15
+	DEFB 57,#06
+	DEFB 58,#F6
+	DEFB 41,#E5
+	DEFB 59,#D5
+	DEFB 42,#D4
+	DEFB 60,#C4
+	DEFB 43,#C3
+	DEFB 61,#B3
+	DEFB 44,#B2
+	DEFB 62,#A1	;90
+	DEFB 63,#A0
+	DEFB 64,#AF
+	DEFB 45,#BE
+	DEFB 65,#BD
+	DEFB 46,#CD
+	DEFB 66,#CC
+	DEFB 47,#DC
+	DEFB 67,#DB
+	DEFB 48,#EB
+	DEFB 68,#FA
+	DEFB 69,#0A
+	DEFB 70,#1A
+	DEFB 49,#2B
+	DEFB 71,#3B
+	DEFB 50,#3C
+	DEFB 72,#4C
+	DEFB 51,#4D
+	DEFB 73,#5D
+	DEFB 52,#5E
+	DEFB 74,#6F
+	DEFB 75,#60
+	DEFB 76,#61
+	DEFB 53,#52
+	DEFB 77,#53
+	DEFB 54,#43
+	DEFB 78,#44
+	DEFB 55,#34
+	DEFB 79,#35
+	DEFB 56,#25
+	DEFB 80,#16	;120
+	DEFB 0,0
+
+l_isILL	;больные
+	LD B,10
+	LD IX,l_MAN
+	LD DE,32
+l_WSI	LD A,(IX+14)
+	OR A
+	JR Z,l_WSJ
+	LD (IX+8),0
+l_WSJ	ADD IX,DE
+	DJNZ l_WSI
+	RET
+
+l_TO_INT	;поcадка в истр
+	LD IX,l_MAN
+	LD IY,l_AQNAVT
+	LD B,10
+l_NI1	LD A,(IY+6)	;не был в бою
+	OR A
+	JR NZ,l_NI7
+	LD A,(IX+4)	;жив?
+	OR A
+	JR NZ,l_N_dead
+	LD A,(IX+8)
+	OR A
+	JR Z,l_N_dead
+	LD A,(IX+13)
+	OR A
+	JR NZ,l_NI2
+l_N_dead	LD A,(IY)
+	OR A
+	JR Z,l_NI2
+	LD (IY),0
+	LD HL,l_AQU
+	DEC (HL)
+l_NI2	LD A,(IX+14)	;F.Wound
+	LD (IY+6),A
+	LD A,(IX+26)	;Freez
+	OR A
+	JR Z,l_NI3
+	INC (IY+6)
+	INC (IY+6)
+l_NI3	LD C,(IX+17)	;Guns
+	LD (IY+9),C
+	LD C,(IX+18)
+	LD (IY+10),C
+	LD C,(IX+19)
+	LD (IY+11),C
+	LD C,(IX+20)
+	LD (IY+12),C
+	LD A,(l_BATRES)
+	CP 2
+	JR C,l_NI7
+	LD A,7
+	SUB (IX+9)
+	RLCA
+	RLCA
+	RLCA	;(56/256..8/256)
+	LD C,A
+	CALL l_RND	;уменьш вр до зв в случ победы
+	CP C
+	JR NC,l_NI7
+	CALL l_RND
+	AND 1
+	INC A
+	LD (IY+13),A
+l_NI7	LD DE,16
+	ADD IY,DE
+	LD E,32
+	ADD IX,DE
+	DJNZ l_NI1
+	RET
+
+l_CRC4	DEFB 0	;[]
+l_PICK	;сбор артеф во времен хран
+	LD IX,l_ALIEN
+	LD DE,32
+	LD B,22
+l_PIK1	LD A,(IX+8)
+	OR A
+	JR Z,l_PIKK
+	;оружие
+	LD C,17
+l_PIK0	LD A,C
+	LD (l_PIKX+2),A
+l_PIKX	LD A,(IX+17)
+	CP 15
+	JR NC,l_PIK2
+	LD HL,l_U_GUN
+	CALL l_BA
+	INC (HL)
+l_PIK2	INC C
+	LD A,C
+	CP 21
+	JR C,l_PIK0
+	;тела/живьём
+	LD A,(IX+13)
+	OR A
+	JR NZ,l_PIKLI
+l_PIKDI	LD HL,l_U_ART+9
+	JR l_PIK3
+l_PIKLI	LD A,(IX+4)
+	CP 2
+	JR NZ,l_PIK4
+	LD A,(l_RS+22)	;дайп?
+	OR A
+	JR NZ,l_PIKDI
+	LD A,2
+l_PIK4	LD HL,l_U_LIV-1
+	CALL l_BA
+l_PIK3	INC (HL)
+l_PIKK	ADD IX,DE
+	DJNZ l_PIK1
+	;корпуса
+	LD A,(l_L_LAND)
+	PUSH AF
+	OR A
+	JR NZ,l_PIK6
+	LD HL,l_U_ART+8
+	INC (HL)
+l_PIK6	POP AF	;зербайт
+	OR A
+	JR Z,l_PIKz
+	CP 5
+	RET C
+	CP 10
+	RET NC
+	CP 7
+	RET Z
+	LD A,30
+l_PIKz	ADD A,30
+	LD C,A
+	CALL l_RND
+	CPL
+	AND 7
+	JR NZ,l_PIK7
+	LD A,C
+	LD (l_U_ART+7),A
+l_PIK7	;артефакты
+	LD C,16
+	LD HL,l_U_ART
+l_PIKAA	LD DE,#E000
+l_PIKA	LD A,(DE)
+	INC DE
+	AND #7F
+	CP C
+	JP NZ,l_PIK8
+	INC (HL)
+l_PIK8	LD A,E
+	OR D
+	JP NZ,l_PIKA
+	INC HL
+	INC C
+	LD A,C
+	CP 22
+	JR C,l_PIKAA
+	;пси-контр
+	LD A,(l_L_LAND)
+	CP 9
+	RET NZ
+	LD A,(l_WAREND)
+	OR A
+	RET NZ
+	LD HL,l_U_ART+6
+	LD DE,#E000
+l_PIK22	LD A,(DE)
+	AND #7F
+	CP 22
+	JR Z,l_PIK9
+	INC DE
+	LD A,E
+	OR D
+	JR NZ,l_PIK22
+	RET
+l_PIK9	LD (HL),1
+	RET
+
+	;4 - пров свопперов []
+l_CHK_4	LD A,(l_PERIOD)
+	CP 3
+	RET C
+	LD HL,(l_CRC4)
+	PUSH HL
+	LD DE,l_LQWE-l_MAN
+	LD BC,((l_B_LOOP-l_LQWE)*256)+8
+	LD IX,l_MAN
+	ADD IX,DE
+l_prt4	LD A,(IX+2)
+	OR A
+	JR Z,l_prt44
+	ADD A,C
+	LD C,A
+l_prt44	INC IX
+	DJNZ l_prt4
+	POP HL
+	CP L
+	RET Z
+	CALL NZ,l_SWPBAT
+	JP l_BEEP

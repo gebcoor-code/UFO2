@@ -1,0 +1,15 @@
+wait 500
+click
+wait 300
+at 288 22
+wait 5
+click
+wait 300
+at 200 120
+wait 8
+click
+wait 60
+at 319 100
+wait 100
+at 150 199
+wait 100

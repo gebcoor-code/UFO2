@@ -1,0 +1,118 @@
+wait 500
+click
+wait 300
+fill 49EE 1 04
+fill 4AF1 1 01
+fill 4AF2 1 00
+fill 4AF3 1 00
+fill 4AF4 1 32
+fill 4AF5 1 32
+fill 4AF6 1 32
+fill 4AF7 1 00
+fill 4AF8 1 32
+fill 4AF9 1 32
+fill 4AFA 1 FF
+fill 4AFB 1 FF
+fill 4AFC 1 FF
+fill 4AFD 1 FF
+fill 4AFE 1 00
+fill 4AFF 1 00
+fill 4B00 1 00
+fill 4B01 1 02
+fill 4B02 1 00
+fill 4B03 1 00
+fill 4B04 1 32
+fill 4B05 1 32
+fill 4B06 1 32
+fill 4B07 1 00
+fill 4B08 1 32
+fill 4B09 1 32
+fill 4B0A 1 FF
+fill 4B0B 1 FF
+fill 4B0C 1 FF
+fill 4B0D 1 FF
+fill 4B0E 1 00
+fill 4B0F 1 00
+fill 4B10 1 00
+fill 4B11 1 03
+fill 4B12 1 00
+fill 4B13 1 00
+fill 4B14 1 32
+fill 4B15 1 32
+fill 4B16 1 32
+fill 4B17 1 00
+fill 4B18 1 32
+fill 4B19 1 32
+fill 4B1A 1 FF
+fill 4B1B 1 FF
+fill 4B1C 1 FF
+fill 4B1D 1 FF
+fill 4B1E 1 00
+fill 4B1F 1 00
+fill 4B20 1 00
+fill 4B21 1 04
+fill 4B22 1 00
+fill 4B23 1 00
+fill 4B24 1 32
+fill 4B25 1 32
+fill 4B26 1 32
+fill 4B27 1 00
+fill 4B28 1 32
+fill 4B29 1 32
+fill 4B2A 1 FF
+fill 4B2B 1 FF
+fill 4B2C 1 FF
+fill 4B2D 1 FF
+fill 4B2E 1 00
+fill 4B2F 1 00
+fill 4B30 1 00
+at 288 22
+wait 5
+click
+wait 400
+shot B1
+wait 200
+shot B2
+key enter 5
+wait 200
+shot B3
+wait 300
+mouse -150 60
+wait 50
+fill 4609 1 64
+fill 460A 1 6E
+wait 10
+click
+wait 100
+shot M1
+click
+wait 600
+shot M2
+fill 4609 1 78
+fill 460A 1 38
+wait 10
+click
+wait 200
+fill 4609 1 96
+fill 460A 1 64
+wait 10
+click
+wait 100
+click
+wait 600
+shot M3
+wait 600
+shot M4
+fill 4609 1 0A
+fill 460A 1 9C
+wait 10
+click
+wait 1500
+shot M5
+fill 4609 1 0A
+fill 460A 1 9C
+wait 10
+click
+wait 1500
+shot M6
+pc

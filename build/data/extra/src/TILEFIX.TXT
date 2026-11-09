@@ -1,0 +1,1 @@
+# the tiles edited by hand (mktil.py -e): set tile x y slot

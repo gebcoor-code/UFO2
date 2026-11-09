@@ -1,0 +1,62 @@
+Полные карты (mkmap.py full): все варианты всех локаций (у морского дна, колоний, портов, острова, нашей
+базы и базы II - 16 кусков по порядку: все куски есть), и куски корабля игрока и НЛО (XL0, XL1: игра ставит
+их на карту в начале боя). Каждый тайл, который есть в картах игры, есть здесь хотя бы раз.
+
+x00a.png - X00 (sea floor, L_L0), XL2.LND
+x00b.png - X00 (sea floor, L_L0), XL3.LND
+x00c.png - X00 (sea floor, L_L0), XL14.LND
+x00d.png - X00 (sea floor, L_L0), XL16.LND
+x00e.png - X00 (sea floor, L_L0), XL17.LND
+x00f.png - X00 (sea floor, L_L0), XL18.LND
+x00g.png - X00 (sea floor, L_L0), XL19.LND
+x00h.png - X00 (sea floor, L_L0), XL20.LND
+x01a.png - X01 (ship I, L_L1), XL6A.LND
+x01b.png - X01 (ship I, L_L1), XL6B.LND
+x01c.png - X01 (ship I, L_L1), XL6C.LND
+x01d.png - X01 (ship I, L_L1), XL6D.LND
+x02.png - X02 (city port, L_L2), XL11.LND
+x03.png - X03 (the other port, L_L2), XL4.LND
+x04.png - X04 (island, L_L3), XL9.LND
+x05.png - X05 (our base, L_L4), XL7.LND
+x06.png - X06 (colony I, L_L5), XL15.LND
+x07a.png - X07 (base I, L_L6), XL5A.LND
+x07b.png - X07 (base I, L_L6), XL5B.LND
+x07c.png - X07 (base I, L_L6), XL5C.LND
+x07d.png - X07 (base I, L_L6), XL5D.LND
+x08a.png - X08 (Tleth, L_L7), XL10A.LND
+x08b.png - X08 (Tleth, L_L7), XL10B.LND
+x08c.png - X08 (Tleth, L_L7), XL10C.LND
+x08d.png - X08 (Tleth, L_L7), XL10D.LND
+x09.png - X09 (colony II, L_L8), XL13.LND
+x10.png - X10 (base II, L_L9), XL12.LND
+x11a.png - X11 (ship II, L_L10), XL8A.LND
+x11b.png - X11 (ship II, L_L10), XL8B.LND
+x11c.png - X11 (ship II, L_L10), XL8C.LND
+x11d.png - X11 (ship II, L_L10), XL8D.LND
+xl0.png - корабль игрока (куски, игра ставит их в начале боя), XL0.LND
+xl1.png - НЛО (куски, игра ставит их в начале боя), XL1.LND
+
+Тайлы наборов, которых нет ни на одной карте (пустышки NOT USED - не в счёт): их игра ставит сама во время
+боя (открытая дверь, обломки после выстрела / взрыва, ...) или не ставит вовсе:
+  XM00_tiles.png: 13
+  XM01_tiles.png: 19 21 37 39 43 46
+  XM02_tiles.png: 2 3
+  XM03_tiles.png: 3 21 27
+  XM04_tiles.png: 2 3 14 33 34 36 37
+  XM05_tiles.png: 19 21 37 39 43 46 71 74
+  XM06_tiles.png: 1 11 12 14 15
+  XM07_tiles.png: 1 2 3 33 49 50 51 52 53 54
+  XM08_tiles.png: 1 11 12 14 15 76
+  XM09_tiles.png: 12 31 33 34 36 37 69
+  XM10_tiles.png: 1 2 6 7 46
+  XM11_tiles.png: 2 4 5 30 31 32 34 44 45 49 50 52 53 59 78
+  XM12_tiles.png: 23 25 46 59 66 67 74 77
+  XM13_tiles.png: 23 25 46 59 66 67 74 77
+  XM14_tiles.png: 1 2 3
+  XM15_tiles.png: 2 27
+  XM16_tiles.png: 18
+  XM17_tiles.png: 2 3 8 9 29 30
+  XM18_tiles.png: 3 25
+  XM19_tiles.png: 2 3
+  XM20_tiles.png: 3 22 26
+  XMMORE_tiles.png: 5 9 11 16 21 22 23 24 25 26 27 28 29 30 31 32

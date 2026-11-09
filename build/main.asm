@@ -1,0 +1,15 @@
+	DEVICE ZXSPECTRUM128
+	INCLUDE "src/xcom.asm"
+	SAVEBIN "out/b5.bin",#4000,#4000
+	SAVEBIN "out/b2.bin",#8000,#4000
+	SLOT 3
+	PAGE 0
+	SAVEBIN "out/p0.bin",#C000,#4000
+	PAGE 1
+	SAVEBIN "out/p1.bin",#C000,#4000
+	PAGE 3
+	SAVEBIN "out/p3.bin",#C000,#4000
+	PAGE 4
+	SAVEBIN "out/p4.bin",#C000,#4000
+	PAGE 7
+	SAVEBIN "out/p7.bin",#C000,#4000

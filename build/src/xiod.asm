@@ -1,0 +1,357 @@
+	;*L+
+	;*** IO FOR UFO2: A-N(1..) HL-START DE-LENTGTH / CY=0 - ERROR
+l_SIDE	DEFB 0
+
+l_POS	LD A,(l_SIDE)
+	OR A
+	LD A,#3C
+	JR Z,l_DW_SID
+	RES 4,A
+l_DW_SID	LD C,#FF
+	CALL l_RG_DOS
+	LD A,D
+	LD C,#7F
+	CALL l_RG_DOS
+	LD A,#18
+	LD C,#1F
+	CALL l_RG_DOS
+	CALL l_COM_EX
+	DI
+	RET
+
+l_RD_SCT	LD BC,l_RD_SCT
+	PUSH BC
+	LD BC,#17F
+	LD IX,#2090
+	JR l_DOS
+
+l_RG_DOS	LD IX,#2A53
+	JR l_DOS
+
+l_COM_EX	LD IX,#3EF5
+l_DOS	PUSH IX
+	JP #3D2F
+
+l_ERR_RW	SCF
+	RET
+
+l_READ1	JP l_D_READ
+	CALL l_D_READ
+	RET NC
+	LD A,(l_SIDE)
+	XOR #FF
+	LD (l_SIDE),A
+	LD A,12
+	JR NZ,l_RTR1
+	NEG
+l_RTR1	ADD A,D
+	LD D,A
+	CALL l_TR000
+	JR l_READ1
+
+l_TR000	RET
+	CALL l_TR0
+l_TR0	CALL l_TR00
+l_TR00	DI
+	LD IX,#2F5F
+	CALL l_DOS
+	LD IX,#2F65
+	JP l_DOS
+
+l_READ	;A-No., HL - adr (as in release 2.10: 256-byte TR-DOS sectors, 4 per 1K block)
+	LD D,0
+	CP 73
+	JR C,l_REA0
+	INC D
+l_REA0	LD (l_X0),HL
+	LD HL,l_X_LEN-2
+	CALL l_WA
+	PUSH AF
+	PUSH HL
+	CALL l_SECTR
+	LD B,4
+	LD HL,(l_X0)
+	PUSH HL
+	CALL l_READ1
+	LD (l_FREE16),DE
+	POP DE
+	POP HL
+	INC HL
+	PUSH HL
+	LD L,(HL)
+	LD H,0
+	ADD HL,HL
+	ADD HL,HL
+	PUSH HL
+	ADD HL,DE
+	LD BC,1024
+	PUSH BC
+	LDIR
+	POP HL
+	POP BC
+	OR A
+	SBC HL,BC
+	LD BC,(l_X0)
+	ADD HL,BC
+	POP DE
+	INC DE
+	LD A,(DE)
+	POP BC
+	SUB B
+	RET Z
+	LD B,A
+	LD C,4
+	LD DE,(l_FREE16)
+l_REA4	PUSH BC
+	CALL l_READ1
+	POP BC
+	DEC C
+	JR NZ,l_REA4
+	RET
+l_SECTR	LD H,D	;D:A = sector number (1K) -> D track, E sector (TR-DOS)
+	LD L,A
+	ADD HL,HL
+	ADD HL,HL
+	LD A,L
+	ADD HL,HL
+	ADD HL,HL
+	ADD HL,HL
+	ADD HL,HL
+	LD DE,#370C
+	AND #0F
+	ADD A,E
+	LD L,A
+	AND #0F
+	INC A
+	LD E,A
+	LD A,L
+	RRA
+	RRA
+	RRA
+	RRA
+	AND #0F
+	ADD A,D
+	ADD A,H
+	LD D,A
+	RET
+
+l_D_WRIT	JP LAY_DWRITE
+	DI
+l_LOPWR	CALL l_POS
+l_LOPWR1	PUSH HL
+	PUSH BC
+	LD C,#5F
+	LD A,E
+	CALL l_RG_DOS
+	CALL l_WR_SC
+	POP BC
+	POP HL
+	INC E
+	INC H
+	DJNZ l_LOPWR
+	RET
+
+l_WR_SC	LD A,#A0
+	LD IX,#2FC3
+	CALL l_DOS
+	LD IX,#3FCA
+	LD C,#7F
+	JP l_DOS
+
+l_D_READ	JP LAY_DREAD	;E-sec 1..16, D-trk (TR-DOS), B-secs, HL
+	DI
+	CALL l_POS
+	LD A,(#5CD6)
+	EX AF,AF'
+l_NXT_S	DEFB #DD
+	LD L,#3	;retry.num
+l_NXT_SC	PUSH HL
+	PUSH BC
+l_NXC_C1	PUSH IX
+	LD C,#5F
+	LD A,E
+	CALL l_RG_DOS
+	CALL l_RD_SCT
+	DI
+	LD HL,#5CD6
+	EX AF,AF'
+	CP (HL)
+	POP IX
+	JR Z,l_GOOD
+	LD (HL),A
+	DEFB #DD
+	DEC L
+	POP BC
+	POP HL
+	JP Z,l_ERR_RW
+	EX AF,AF'
+	JR l_NXT_SC
+l_GOOD	POP BC
+	POP HL
+	EX AF,AF'
+l_GOOD1	INC E
+	LD A,E
+	CP #F9
+	JR C,l_OLD_TR
+	LD E,#F4
+	INC D
+	CALL l_POS
+l_OLD_TR	INC H
+	INC H
+	INC H
+	INC H
+	DJNZ l_NXT_S
+	XOR A
+	RET
+
+	;----------------------------------------------------------
+l_S_T100	DEFW #101	;сектор 1..16; трек 1 or 3
+
+l_BUF100	;--------- таблица защиты ---- EQU ATR+768 ---------
+	DEFB #43,#7E,#90,#70,#45,#C1,#22,#E0,#F5,#3B,#ED,#F0,#4C,#C4,#E2,#2D
+	DEFB #46,#0C,#61,#72,#88,#78,#14,#0C,#7F,#54,#6D,#93,#FD,#C1,#6E,#AB
+	DEFB #6E,#14,#F0,#C5,#0E,#13,#11,#7B,#4B,#B9,#E3,#3D,#06,#92,#C4,#3C
+	DEFB #58,#C8,#B7,#C5,#73,#A8,#69,#19,#3B,#87,#80,#89,#9B,#07,#32,#E4
+
+	DEFB #98,#09,#1D,#0A,#88,#09,#49,#38,#98,#07,#31,#1E,#88,#07,#50,#3F
+	DEFB #B8,#05,#3D,#26,#98,#05,#4D,#3A,#88,#05,#5A,#49,#88,#03,#49,#38
+	DEFB #A0,#B5,#CE,#AC,#BC,#84,#0E,#49,#62,#76,#81,#97,#6D,#25,#30,#49
+	DEFB #60,#B8,#88,#2A,#25,#F7,#24,#17,#52,#25,#9D,#6B,#B1,#8F,#35,#20
+
+	DEFB #39,#AD,#73,#C6,#11,#44,#88,#58,#12,#3D,#38,#4D,#C5,#4D,#5E,#88
+	DEFB #58,#FE,#D9,#27,#CB,#06,#E0,#A2,#9D,#AC,#70,#5A,#55,#69,#AB,#AF
+	DEFB #A3,#CF,#4D,#93,#51,#7C,#8D,#BE,#86,#48,#83,#61,#D9,#F4,#05,#39
+	DEFB #07,#C7,#12,#F6,#4A,#6D,#BC,#88,#8C,#60,#C0,#80,#CB,#77,#58,#E3
+
+	DEFB #CB,#0A,#50,#82,#5E,#A6,#EC,#E7,#F0,#8B,#E3,#18,#AB,#9E,#DC,#24
+	DEFB #CE,#09,#02,#35,#30,#E7,#F0,#8B,#E3,#57,#8A,#94,#BB,#9C,#27,#8F
+	DEFB #C4,#9B,#BC,#48,#26,#51,#26,#2F,#B9,#F5,#DB,#FC,#88,#E6,#D9,#F3
+	DEFB #6F,#70,#0B,#63,#64,#00,#6E,#6F,#F8,#B6,#8E,#3C,#17,#24,#18,#E8,#11
+
+
+l_LD100	;загр 100 бт блока в ТАВ100
+	LD HL,(l_TAB100+98)
+	LD BC,#ACCE
+	XOR A
+	SBC HL,BC
+	RET Z	;уже загружено
+	XOR A
+	LD (l_SIDE),A
+l_L101	LD HL,l_BUF100
+	LD B,1
+	LD DE,(l_S_T100)
+	CALL l_D_READ
+	JR C,l_L100er
+	LD HL,(l_BUF100+98)
+	LD BC,#ACCE	;последние два байта
+	XOR A
+	SBC HL,BC
+	JR Z,l_L100ok
+l_L100er	LD HL,(l_S_T100)
+	INC L
+	LD A,L
+	CP 16
+	JR C,l_L102
+	LD L,1
+	LD A,H
+	XOR %10
+	LD H,A
+l_L102	LD (l_S_T100),HL
+	CALL l_TR000
+	JP l_L101
+l_L100ok	LD DE,l_TAB100
+	LD HL,l_BUF100
+	LD BC,100
+	LDIR
+	SCF
+	RET
+
+l_PROTEC	;A- N нач данных
+	LD HL,l_TAB100+64
+	CALL l_DD
+	LD A,1
+	LD (l_SIDE),A
+	LD A,(HL)
+	INC HL
+	LD D,(HL)
+	SRL D
+	INC HL
+	PUSH HL
+	RRCA
+	RRCA
+	RRCA
+	LD E,A
+	LD HL,l_INTR
+	LD B,1
+	PUSH DE
+	CALL l_D_WRIT
+	POP DE
+	LD HL,l_BUF100
+	LD B,1
+	CALL l_D_READ
+l_U102	LD B,255
+	LD DE,l_INTR
+	LD HL,l_BUF100
+l_U100	LD A,(DE)
+	CP (HL)
+	JR NZ,l_U101
+	INC HL
+	INC HL
+	INC DE
+	INC DE
+	DJNZ l_U100
+	PUSH HL
+	CALL l_READ	;сектор целый
+	CALL l_PT128
+l_U101	POP HL
+	LD A,B
+	CP 252
+	RET NC	;сектор не найден /retry
+	ADD A,8
+	SUB (HL)
+	CP 20
+	JR NC,l_U102	;царапина не на месте
+	POP HL
+	RET C	;норм выход
+
+l_P_BLK	DEFB 0	;номер блока для проверки 0,1,4,5
+l_RETRY	DEFB 9	;к-во попыток
+
+;*L+
+l_TR_SEC	; ПРВЕРКА ЗАЩИТЫ - номера tr sec для PROTEC
+	CALL l_MEM7
+	CALL l_L100ok	;-------------------LD100---|
+	CALL l_CHECK3
+	RET	;---------без проверки защиты--|
+	CALL l_CLR_P
+	CALL l_RND
+	AND %101
+	LD (l_P_BLK),A
+l_TR_RTR	CALL l_PROTEC
+	CALL l_TR000
+	CALL l_CLR_P
+	LD A,(l_P_BLK)
+	XOR %10
+	LD (l_P_BLK),A
+	LD HL,l_RETRY
+	DEC (HL)
+	JR NZ,l_TR_RTR
+	m_M_S 1	;превышено число попыток
+	LD DE,l_SCR
+	LDIR
+	CALL l_LDASM2
+	CALL l_MLOOP
+	DEFM "эТО ОНo"
+
+l_X_LEN
+	INCLUDE "xdisk2.asm"
+	;3,246, 15,13  LEN=278580
+
+l_CLR_P	LD HL,l_BUF100
+	LD BC,511
+	PUSH HL
+	POP DE
+	INC DE
+	LD (HL),#FE
+	LDIR
+	RET

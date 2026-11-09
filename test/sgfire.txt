@@ -1,0 +1,14 @@
+wait 500
+click
+wait 300
+at 288 22
+wait 5
+click
+wait 500
+shot H0
+at 200 120
+wait 8
+log
+rclick
+wait 200
+shot H2

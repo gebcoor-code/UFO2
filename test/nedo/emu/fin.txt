@@ -1,0 +1,29 @@
+type ufo2
+key Enter
+wait 4000
+shot z1
+key Space
+wait 3000
+key 2
+wait 26000
+key Space
+wait 12000
+shot z2
+goto 240 141 0CE4 0CE6
+mclick
+wait 1500
+goto 101 118 0CE4 0CE6
+mclick
+wait 2000
+key y
+wait 4000
+shot z3
+type ufo2 debug x4
+key Enter
+wait 26000
+key Space
+wait 8000
+goto 287 19 0CE4 0CE6
+mclick
+wait 16000
+shot z4

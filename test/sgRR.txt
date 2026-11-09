@@ -1,0 +1,9 @@
+wait 500
+click
+wait 300
+at 288 22
+wait 5
+click
+wait 300
+mouse 200 0
+wait 100

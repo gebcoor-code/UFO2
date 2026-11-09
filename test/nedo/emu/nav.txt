@@ -1,0 +1,5 @@
+wait 40000
+eval document.querySelector("canvas").focus(), document.activeElement.tagName
+key Enter
+wait 2500
+wait 2500
